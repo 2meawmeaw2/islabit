@@ -1,29 +1,58 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { SplashScreen, Stack } from "expo-router";
+import "./globals.css";
+import {
+  useFonts,
+  // Thin (100)
+  IBMPlexSansArabic_100Thin,
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+  // ExtraLight (200)
+  IBMPlexSansArabic_200ExtraLight,
+
+  // Light (300)
+  IBMPlexSansArabic_300Light,
+
+  // Regular (400)
+  IBMPlexSansArabic_400Regular,
+
+  // Medium (500)
+  IBMPlexSansArabic_500Medium,
+
+  // SemiBold (600)
+  IBMPlexSansArabic_600SemiBold,
+
+  // Bold (700)
+  IBMPlexSansArabic_700Bold,
+} from "@expo-google-fonts/ibm-plex-sans-arabic";
+import { useEffect } from "react";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  const [fontsLoaded] = useFonts({
+    // Thin (100)
+    IBMPlexSansArabic_100Thin,
+
+    // ExtraLight (200)
+    IBMPlexSansArabic_200ExtraLight,
+
+    // Light (300)
+    IBMPlexSansArabic_300Light,
+
+    // Regular (400)
+    IBMPlexSansArabic_400Regular,
+
+    // Medium (500)
+    IBMPlexSansArabic_500Medium,
+
+    // SemiBold (600)
+    IBMPlexSansArabic_600SemiBold,
+
+    // Bold (700)
+    IBMPlexSansArabic_700Bold,
   });
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
-
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
