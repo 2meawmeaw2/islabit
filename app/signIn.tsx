@@ -5,15 +5,18 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, ScrollView } from "react-native";
+import { useRouter } from "expo-router";
 
 const LogIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -40,7 +43,12 @@ const LogIn = () => {
                   resizeMode="cover"
                 />
               </View>
-              <Text className="font-ibm-plex-arabic-bold text-2xl text-text-brand text-center mb-1">
+              <Text
+                onPress={() => {
+                  router.navigate("/signUp");
+                }}
+                className="font-ibm-plex-arabic-bold text-2xl text-text-brand text-center mb-1"
+              >
                 أهلاً بعودتك
               </Text>
               <Text className="font-ibm-plex-arabic text-text-secondary text-center text-sm">

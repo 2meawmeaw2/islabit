@@ -343,7 +343,7 @@ const SignUp = () => {
               </View>
 
               {/* Google Sign Up */}
-              <TouchableOpacity className="bg-fore border-[1px] border-border-active rounded-lg py-2.5 mb-4 gap-3 flex-row-reverse items-center justify-center">
+              <TouchableOpacity className="bg-fore  border-[1px] border-border-active rounded-lg py-2.5 mb-4 gap-3 flex-row-reverse items-center justify-center">
                 <Text className="font-ibm-plex-arabic text-text-primary text-sm">
                   إنشاء حساب باستخدام
                 </Text>

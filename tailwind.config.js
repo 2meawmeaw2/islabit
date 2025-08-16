@@ -37,8 +37,9 @@ module.exports = {
         text: {
           brand: "#00AEEF",
           primary: "#E5F8FF",
+          white: "#85DEFF",
           secondary: "#F5F5F5",
-          disabled: "#E2E8F0",
+          disabled: "#6C7684",
         },
         feedback: {
           success: "#4ADE80",

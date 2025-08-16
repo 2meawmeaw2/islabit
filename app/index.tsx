@@ -9,19 +9,15 @@ export default function Index() {
         className=" relative w-full h-1/2  border-white justify-end items-center"
         resizeMode="contain"
       >
-        <Link href="/habit">
+        <Link href="/all-habits" className="my-10">
           <Text className="text-lg text-blue-500">Habit</Text>
         </Link>
 
-        <Link href="/settings">
-          <Text className="text-lg text-blue-500">Settings</Text>
-        </Link>
-
-        <Link href="/signIn">
+        <Link href="/signIn" className="my-10">
           <Text className="text-lg text-blue-500">Login</Text>
         </Link>
 
-        <Link href="/signUp">
+        <Link href="/signUp" className="my-10">
           <Text className="text-lg text-blue-500">Sign Up</Text>
         </Link>
       </ImageBackground>
