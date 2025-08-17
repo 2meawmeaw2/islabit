@@ -1,6 +1,8 @@
 /** @type {import('tailwindcss').Config} */
+const tokens = require("./tokens");
+
 module.exports = {
-  // NOTE: Update this to include the paths to all files that contain Nativewind classes.
+  // NOTE: Update this to include the paths to all files that contain NativeWind classes.
   content: [
     "./App.tsx",
     "./app/**/*.{js,jsx,ts,tsx}",
@@ -9,28 +11,7 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      fontFamily: {
-        // Thin (100)
-        "ibm-plex-arabic-thin": ["IBMPlexSansArabic_100Thin"],
-
-        // ExtraLight (200)
-        "ibm-plex-arabic-extralight": ["IBMPlexSansArabic_200ExtraLight"],
-
-        // Light (300)
-        "ibm-plex-arabic-light": ["IBMPlexSansArabic_300Light"],
-
-        // Regular (400)
-        "ibm-plex-arabic": ["IBMPlexSansArabic_400Regular"],
-
-        // Medium (500)
-        "ibm-plex-arabic-medium": ["IBMPlexSansArabic_500Medium"],
-
-        // SemiBold (600)
-        "ibm-plex-arabic-semibold": ["IBMPlexSansArabic_600SemiBold"],
-
-        // Bold (700)
-        "ibm-plex-arabic-bold": ["IBMPlexSansArabic_700Bold"],
-      },
+      // Use the tokenized color object directly
       colors: {
         bg: "#00070A",
         fore: "#1A1E1F",
@@ -51,10 +32,27 @@ module.exports = {
           primary: "#00AEEF",
           secondary: "#4B9AB5",
           active: "#62D4FF",
-          highlight: "#FFC857", // Matches warning hue
+          highlight: "#FFC857",
         },
+      },
+
+      // Tailwind expects arrays for fontFamily, so use the tailwindFonts mapping
+
+      fontFamily: {
+        "ibm-plex-arabic-thin": "IBMPlexSansArabic_100Thin",
+        "ibm-plex-arabic-extralight": "IBMPlexSansArabic_200ExtraLight",
+        "ibm-plex-arabic-light": "IBMPlexSansArabic_300Light",
+        "ibm-plex-arabic": "IBMPlexSansArabic_400Regular",
+        "ibm-plex-arabic-medium": "IBMPlexSansArabic_500Medium",
+        "ibm-plex-arabic-semibold": "IBMPlexSansArabic_600SemiBold",
+        "ibm-plex-arabic-bold": "IBMPlexSansArabic_700Bold",
       },
     },
   },
   plugins: [],
 };
+
+/**
+ * fontFamily values for use in React Native styles (single string per font).
+ * Use tokens.fontFamily['ibm-plex-arabic'] etc. in StyleSheet.
+ */

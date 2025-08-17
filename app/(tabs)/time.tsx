@@ -15,27 +15,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  Layout,
-  useSharedValue,
   useAnimatedStyle,
+  useSharedValue,
   withTiming,
-  Easing,
 } from "react-native-reanimated";
 
-// ===== Spacing scale (8pt) =====
+/** Spacing */
 const SP = {
   screenX: 24,
-  headerY: 8,
   sectionGap: 24,
   pillTop: 16,
   rowV: 12,
   hit: 44,
   bottomInset: 128,
   fieldGap: 12,
-};
+} as const;
 
+/** Data */
 type PrayerKey = "fajr" | "dhuhr" | "asr" | "maghrib" | "isha";
 type Task = {
   id: string;
@@ -43,12 +39,11 @@ type Task = {
   notes?: string;
   prayer: PrayerKey;
   completed: boolean;
-  pinned?: boolean;
   createdAt: number;
 };
 type PrayerTime = { key: PrayerKey; name: string; time: string; emoji: string };
 
-const defaultPrayerTimes: PrayerTime[] = [
+const PRAYERS: PrayerTime[] = [
   { key: "fajr", name: "الفجر", time: "05:00", emoji: "🌅" },
   { key: "dhuhr", name: "الظهر", time: "12:30", emoji: "☀️" },
   { key: "asr", name: "العصر", time: "16:00", emoji: "🌤️" },
@@ -56,8 +51,7 @@ const defaultPrayerTimes: PrayerTime[] = [
   { key: "isha", name: "العشاء", time: "20:45", emoji: "🌙" },
 ];
 
-const orderedKeys: PrayerKey[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
-const colorByPrayer: Record<PrayerKey, string> = {
+const COLORS: Record<PrayerKey, string> = {
   fajr: "#4B9AB5",
   dhuhr: "#FACC15",
   asr: "#FB923C",
@@ -65,54 +59,62 @@ const colorByPrayer: Record<PrayerKey, string> = {
   isha: "#7C3AED",
 };
 
-const kTodayKey = (d = new Date()) =>
+const ORDER: PrayerKey[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+
+/** Small helpers */
+const todayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
   ).padStart(2, "0")}`;
-const timeToDate = (hhmm: string, base = new Date()) => {
+
+const toDate = (hhmm: string, base = new Date()) => {
   const [h, m] = hhmm.split(":").map(Number);
   const d = new Date(base);
   d.setHours(h, m, 0, 0);
   return d;
 };
-const secondsBetween = (a: Date, b: Date) =>
-  Math.max(0, Math.floor((b.getTime() - a.getTime()) / 1000));
+
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const fmtCountdown = (s: number) =>
   `${pad2(Math.floor(s / 3600))}:${pad2(Math.floor((s % 3600) / 60))}:${pad2(
     s % 60
   )}`;
-const withAlpha = (hex: string, alpha: number) => {
-  const r = parseInt(hex.slice(1, 3), 16),
-    g = parseInt(hex.slice(3, 5), 16),
-    b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
+
+const rgba = (hex: string, a: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${a})`;
 };
-const formatArabicDate = (d: Date) =>
+
+const fmtArabicDate = (d: Date) =>
   new Intl.DateTimeFormat("ar", {
     weekday: "long",
     day: "numeric",
     month: "long",
   }).format(d);
-const id = () =>
-  Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
 
-function getCurrentAndNext(prayers: PrayerTime[], now = new Date()) {
-  const list = prayers.map((p) => ({ ...p, date: timeToDate(p.time, now) }));
+const newId = () =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+/** Current/Next prayer */
+function currentAndNext(prayers: PrayerTime[], now = new Date()) {
+  const list = prayers.map((p) => ({ ...p, date: toDate(p.time, now) }));
   const nowMs = now.getTime();
   const nextToday = list.find((p) => p.date.getTime() > nowMs);
   const current =
     [...list].reverse().find((p) => p.date.getTime() <= nowMs) ||
     list[list.length - 1];
   if (!nextToday) {
-    const tmr = new Date(now);
-    tmr.setDate(tmr.getDate() + 1);
+    const t = new Date(now);
+    t.setDate(t.getDate() + 1);
     const fajr = prayers.find((p) => p.key === "fajr")!;
-    return { current, next: { ...fajr, date: timeToDate(fajr.time, tmr) } };
+    return { current, next: { ...fajr, date: toDate(fajr.time, t) } };
   }
   return { current, next: nextToday };
 }
 
+/** Sections */
 type SectionBlock = {
   title: string;
   prayerKey: PrayerKey;
@@ -121,14 +123,44 @@ type SectionBlock = {
   data: Task[];
 };
 
+function makeSections(
+  tasks: Task[],
+  prayers: PrayerTime[],
+  collapsed: Record<PrayerKey, boolean>
+): SectionBlock[] {
+  const groups: Record<PrayerKey, Task[]> = {
+    fajr: [],
+    dhuhr: [],
+    asr: [],
+    maghrib: [],
+    isha: [],
+  };
+  for (const t of tasks) groups[t.prayer].push(t);
+  ORDER.forEach((k) =>
+    groups[k].sort(
+      (a, b) =>
+        Number(a.completed) - Number(b.completed) || a.createdAt - b.createdAt
+    )
+  );
+  return ORDER.map((k) => {
+    const p = prayers.find((x) => x.key === k)!;
+    return {
+      title: p.name,
+      prayerKey: p.key,
+      time: p.time,
+      emoji: p.emoji,
+      data: collapsed[k] ? [] : groups[k],
+    };
+  });
+}
+
+/** Main */
 const SalatTasksMinimal: React.FC<{
   prayerTimes?: PrayerTime[];
   date?: Date;
-}> = ({ prayerTimes = defaultPrayerTimes, date = new Date() }) => {
+}> = ({ prayerTimes = PRAYERS, date = new Date() }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [showCompleted, setShowCompleted] = useState(true);
   const [loading, setLoading] = useState(true);
-
   const [collapsed, setCollapsed] = useState<Record<PrayerKey, boolean>>({
     fajr: true,
     dhuhr: true,
@@ -137,35 +169,33 @@ const SalatTasksMinimal: React.FC<{
     isha: true,
   });
 
-  // 🔹 NEW: quick-add state
+  // Quick add
   const [addingPrayer, setAddingPrayer] = useState<PrayerKey | null>(null);
   const [quickTitle, setQuickTitle] = useState("");
 
-  // modal (advanced add/edit)
+  // Modal add/edit
   const [modalVisible, setModalVisible] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftNotes, setDraftNotes] = useState("");
   const [draftPrayer, setDraftPrayer] = useState<PrayerKey>("dhuhr");
   const editingId = useRef<string | null>(null);
 
+  // Countdown
   const [countdown, setCountdown] = useState("00:00:00");
+
   const { current, next } = useMemo(
-    () => getCurrentAndNext(prayerTimes, date),
+    () => currentAndNext(prayerTimes, date),
     [prayerTimes, date]
   );
 
-  const storageKey = `salatTasks:${kTodayKey(date)}`;
+  const storageKey = `salatTasks:${todayKey(date)}`;
 
+  /** Load/save */
   useEffect(() => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(storageKey);
-        if (raw) {
-          setTasks(JSON.parse(raw));
-        } else {
-          setTasks([]);
-          await AsyncStorage.setItem(storageKey, JSON.stringify([]));
-        }
+        setTasks(raw ? JSON.parse(raw) : []);
       } finally {
         setLoading(false);
       }
@@ -173,64 +203,36 @@ const SalatTasksMinimal: React.FC<{
   }, [storageKey]);
 
   useEffect(() => {
+    if (!loading) AsyncStorage.setItem(storageKey, JSON.stringify(tasks));
+  }, [tasks, loading, storageKey]);
+
+  /** Tick countdown */
+  useEffect(() => {
     const t = setInterval(() => {
       const now = new Date();
-      const { next: n } = getCurrentAndNext(prayerTimes, now);
-      setCountdown(fmtCountdown(secondsBetween(now, n.date as any)));
+      const { next: n } = currentAndNext(prayerTimes, now);
+      const secs = Math.max(
+        0,
+        Math.floor((n.date.getTime() - now.getTime()) / 1000)
+      );
+      setCountdown(fmtCountdown(secs));
     }, 1000);
     return () => clearInterval(t);
   }, [prayerTimes]);
 
-  useEffect(() => {
-    if (!loading) AsyncStorage.setItem(storageKey, JSON.stringify(tasks));
-  }, [tasks, loading, storageKey]);
+  const sections = useMemo(
+    () => makeSections(tasks, prayerTimes, collapsed),
+    [tasks, prayerTimes, collapsed]
+  );
 
-  const sections: SectionBlock[] = useMemo(() => {
-    const grouped: Record<PrayerKey, Task[]> = {
-      fajr: [],
-      dhuhr: [],
-      asr: [],
-      maghrib: [],
-      isha: [],
-    };
-    for (const t of tasks) grouped[t.prayer].push(t);
-
-    const mk = (p: PrayerTime): SectionBlock => {
-      let list = grouped[p.key].sort((a, b) => {
-        if ((a.pinned ? 0 : 1) !== (b.pinned ? 0 : 1))
-          return (a.pinned ? 0 : 1) - (b.pinned ? 0 : 1);
-        if ((a.completed ? 1 : 0) !== (b.completed ? 1 : 0))
-          return (a.completed ? 1 : 0) - (b.completed ? 1 : 0);
-        return a.createdAt - b.createdAt;
-      });
-      if (!showCompleted) list = list.filter((t) => !t.completed);
-      const data = collapsed[p.key] ? [] : list;
-      return {
-        title: p.name,
-        prayerKey: p.key,
-        time: p.time,
-        emoji: p.emoji,
-        data,
-      };
-    };
-
-    return orderedKeys.map((k) => mk(prayerTimes.find((p) => p.key === k)!));
-  }, [tasks, showCompleted, prayerTimes, collapsed]);
-
-  const hasAnyVisibleTasks = useMemo(() => {
-    const visible = showCompleted ? tasks : tasks.filter((t) => !t.completed);
-    return visible.length > 0;
-  }, [tasks, showCompleted]);
-
-  // actions
-  const toggleComplete = (id: string) => {
+  /** Actions */
+  const toggleComplete = (id: string) =>
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
     );
-  };
-  const removeTask = (id: string) => {
+
+  const removeTask = (id: string) =>
     setTasks((prev) => prev.filter((t) => t.id !== id));
-  };
 
   const startEdit = (task: Task) => {
     editingId.current = task.id;
@@ -239,31 +241,26 @@ const SalatTasksMinimal: React.FC<{
     setDraftPrayer(task.prayer);
     setModalVisible(true);
   };
+
   const submitDraft = () => {
-    if (!draftTitle.trim())
-      return Alert.alert("تنبيه", "يرجى كتابة عنوان المهمة");
+    const title = draftTitle.trim();
+    if (!title) return Alert.alert("تنبيه", "يرجى كتابة عنوان المهمة");
     if (editingId.current) {
       setTasks((prev) =>
         prev.map((t) =>
           t.id === editingId.current
-            ? {
-                ...t,
-                title: draftTitle.trim(),
-                notes: draftNotes.trim(),
-                prayer: draftPrayer,
-              }
+            ? { ...t, title, notes: draftNotes.trim(), prayer: draftPrayer }
             : t
         )
       );
     } else {
       setTasks((prev) => [
         {
-          id: id(),
-          title: draftTitle.trim(),
+          id: newId(),
+          title,
           notes: draftNotes.trim(),
           prayer: draftPrayer,
           completed: false,
-          pinned: false,
           createdAt: Date.now(),
         },
         ...prev,
@@ -271,18 +268,20 @@ const SalatTasksMinimal: React.FC<{
       setCollapsed((c) => ({ ...c, [draftPrayer]: false }));
     }
     setModalVisible(false);
+    editingId.current = null;
+    setDraftTitle("");
+    setDraftNotes("");
   };
 
-  // NEW: quick add submit
   const submitQuickAdd = (key: PrayerKey) => {
-    if (!quickTitle.trim()) return;
+    const title = quickTitle.trim();
+    if (!title) return;
     setTasks((prev) => [
       {
-        id: id(),
-        title: quickTitle.trim(),
+        id: newId(),
+        title,
         prayer: key,
         completed: false,
-        pinned: false,
         createdAt: Date.now(),
       },
       ...prev,
@@ -294,38 +293,23 @@ const SalatTasksMinimal: React.FC<{
 
   const isCurrent = (k: PrayerKey) => current.key === k;
   const isNext = (k: PrayerKey) => next.key === k;
-
   const toggleSection = (k: PrayerKey) =>
     setCollapsed((c) => ({ ...c, [k]: !c[k] }));
 
   return (
     <SafeAreaView className="bg-bg flex-1">
       {/* App Bar */}
-      <View
-        style={{
-          paddingHorizontal: SP.screenX,
-          paddingTop: SP.headerY,
-          paddingBottom: SP.headerY,
-        }}
-      >
+      <View style={{ paddingHorizontal: SP.screenX, paddingVertical: 8 }}>
         <View className="flex-row-reverse items-center justify-between">
           <Text className="font-ibm-plex-arabic-bold text-text-brand text-xl ml-2">
             تنظيم اليوم
           </Text>
-          <TouchableOpacity
-            onPress={() => setShowCompleted((s) => !s)}
-            className="px-3 py-1.5 rounded-full bg-fore border border-border-secondary"
-          >
-            <Text className="font-ibm-plex-arabic text-text-primary text-xs">
-              {showCompleted ? "إخفاء المنجزة" : "عرض المنجزة"}
-            </Text>
-          </TouchableOpacity>
         </View>
         <Text className="font-ibm-plex-arabic text-text-secondary text-xs text-right mt-1">
-          {formatArabicDate(date)}
+          {fmtArabicDate(date)}
         </Text>
 
-        {/* 🔹 Next prayer pill + timeline */}
+        {/* Next prayer pill + timeline */}
         <View
           className="rounded-2xl px-4 py-3 bg-fore border border-border-primary"
           style={{ marginTop: SP.pillTop }}
@@ -348,6 +332,7 @@ const SalatTasksMinimal: React.FC<{
               </Text>
             </View>
           </View>
+
           <View className="flex-row-reverse items-center justify-between mt-3">
             {prayerTimes.map((p) => (
               <View
@@ -359,10 +344,10 @@ const SalatTasksMinimal: React.FC<{
                   className="w-2.5 h-2.5 rounded-full"
                   style={{
                     backgroundColor: isCurrent(p.key)
-                      ? colorByPrayer[p.key]
+                      ? COLORS[p.key]
                       : isNext(p.key)
                         ? "#00AEEF"
-                        : withAlpha("#94A3B8", 0.4),
+                        : rgba("#94A3B8", 0.4),
                   }}
                 />
                 <Text className="font-ibm-plex-arabic text-[10px] text-text-secondary mt-1">
@@ -374,9 +359,9 @@ const SalatTasksMinimal: React.FC<{
         </View>
       </View>
 
-      {/* List */}
+      {/* Sections */}
       <SectionList<Task, SectionBlock>
-        sections={hasAnyVisibleTasks ? sections : []}
+        sections={tasks.length ? sections : []}
         keyExtractor={(item) => item.id}
         stickySectionHeadersEnabled
         SectionSeparatorComponent={() => (
@@ -402,27 +387,21 @@ const SalatTasksMinimal: React.FC<{
           />
         )}
         renderItem={({ item }) => (
-          <Animated.View
-            entering={FadeInDown.duration(180)}
-            exiting={FadeOutUp.duration(140)}
-            layout={Layout.springify().damping(16)}
-          >
-            <TaskRowMinimal
-              task={item}
-              onToggle={() => toggleComplete(item.id)}
-              onEdit={() => startEdit(item)}
-              onDelete={() =>
-                Alert.alert("حذف", "هل تريد حذف هذه المهمة؟", [
-                  { text: "إلغاء", style: "cancel" },
-                  {
-                    text: "حذف",
-                    style: "destructive",
-                    onPress: () => removeTask(item.id),
-                  },
-                ])
-              }
-            />
-          </Animated.View>
+          <TaskRow
+            task={item}
+            onToggle={() => toggleComplete(item.id)}
+            onEdit={() => startEdit(item)}
+            onDelete={() =>
+              Alert.alert("حذف", "هل تريد حذف هذه المهمة؟", [
+                { text: "إلغاء", style: "cancel" },
+                {
+                  text: "حذف",
+                  style: "destructive",
+                  onPress: () => removeTask(item.id),
+                },
+              ])
+            }
+          />
         )}
         renderSectionFooter={({ section }) =>
           addingPrayer === section.prayerKey ? (
@@ -441,7 +420,7 @@ const SalatTasksMinimal: React.FC<{
                 <Ionicons
                   name="checkmark-circle"
                   size={24}
-                  color={colorByPrayer[section.prayerKey]}
+                  color={COLORS[section.prayerKey]}
                 />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setAddingPrayer(null)}>
@@ -459,7 +438,7 @@ const SalatTasksMinimal: React.FC<{
         }
       />
 
-      {/* Advanced modal (unchanged) */}
+      {/* Add/Edit Modal */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -529,7 +508,7 @@ const SalatTasksMinimal: React.FC<{
                 className="flex-row-reverse flex-wrap"
                 style={{ marginBottom: SP.fieldGap }}
               >
-                {orderedKeys.map((k) => {
+                {ORDER.map((k) => {
                   const p = prayerTimes.find((x) => x.key === k)!;
                   const active = draftPrayer === k;
                   return (
@@ -543,9 +522,7 @@ const SalatTasksMinimal: React.FC<{
                       }`}
                     >
                       <Text
-                        className={`font-ibm-plex-arabic text-xs ${
-                          active ? "text-bg" : "text-text-primary"
-                        }`}
+                        className={`font-ibm-plex-arabic text-xs ${active ? "text-bg" : "text-text-primary"}`}
                       >
                         {p.emoji} {p.name} • {p.time}
                       </Text>
@@ -580,7 +557,7 @@ const SalatTasksMinimal: React.FC<{
   );
 };
 
-// ---------- SectionHeader ----------
+/** Section Header (no animation; up/down icon to keep UI simple) */
 const SectionHeader: React.FC<{
   section: SectionBlock;
   collapsed: boolean;
@@ -589,34 +566,31 @@ const SectionHeader: React.FC<{
   isNext: boolean;
   onAdd: () => void;
 }> = ({ section, collapsed, onToggle, isCurrent, isNext, onAdd }) => {
-  const rot = useSharedValue(collapsed ? 0 : 1);
-  useEffect(() => {
-    rot.value = withTiming(collapsed ? 0 : 1, {
-      duration: 180,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [collapsed, rot]);
-
-  const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rot.value * 180}deg` }],
-  }));
-
+  const dropIconRotation = useSharedValue<number>(0);
+  const dropIconStyles = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotateZ: `${dropIconRotation.value}deg` }],
+    };
+  });
+  const handleHeaderPress = () => {
+    if (collapsed) {
+      dropIconRotation.value = withTiming(180, { duration: 250 });
+    } else {
+      dropIconRotation.value = withTiming(0, { duration: 250 });
+    }
+    onToggle();
+  };
   return (
     <View className="bg-bg" style={{ paddingVertical: 6, zIndex: 2 }}>
       <View className="flex-row-reverse items-center justify-between">
         <TouchableOpacity
-          onPress={onToggle}
+          onPress={handleHeaderPress}
           className="flex-row-reverse items-center flex-1 relative pr-10"
           activeOpacity={0.8}
         >
           <View
             className="w-8 h-8 rounded-xl items-center absolute top-0 justify-center ml-2"
-            style={{
-              backgroundColor: withAlpha(
-                colorByPrayer[section.prayerKey],
-                0.16
-              ),
-            }}
+            style={{ backgroundColor: rgba(COLORS[section.prayerKey], 0.16) }}
           >
             <Text className="text-text-primary text-sm">{section.emoji}</Text>
           </View>
@@ -637,10 +611,11 @@ const SectionHeader: React.FC<{
               {section.time}
             </Text>
           </View>
-          <Animated.View style={[{ marginLeft: 8 }, chevronStyle]}>
-            <Ionicons name="chevron-down" size={18} color="#94A3B8" />
+          <Animated.View style={[dropIconStyles, { marginLeft: 8 }]}>
+            <Ionicons name={"chevron-down"} size={18} color="#94A3B8" />
           </Animated.View>
         </TouchableOpacity>
+
         <TouchableOpacity
           onPress={onAdd}
           className="rounded-lg bg-text-brand items-center justify-center"
@@ -654,8 +629,8 @@ const SectionHeader: React.FC<{
   );
 };
 
-// ---------- TaskRowMinimal ----------
-const TaskRowMinimal: React.FC<{
+/** Task Row */
+const TaskRow: React.FC<{
   task: Task;
   onToggle: () => void;
   onEdit: () => void;
@@ -668,7 +643,7 @@ const TaskRowMinimal: React.FC<{
     >
       <TouchableOpacity
         onPress={onToggle}
-        className="flex-row-reverse items-center flex-1"
+        className="flex-row-reverse items-center flex-1 gap-2"
         activeOpacity={0.7}
       >
         <View
@@ -703,6 +678,7 @@ const TaskRowMinimal: React.FC<{
           )}
         </View>
       </TouchableOpacity>
+
       <View className="flex-row items-center">
         <TouchableOpacity
           onPress={onEdit}
@@ -730,6 +706,7 @@ const TaskRowMinimal: React.FC<{
   </View>
 );
 
+/** Empty state */
 const EmptyState: React.FC<{ onAdd: () => void }> = ({ onAdd }) => (
   <View className="bg-fore border border-border-primary rounded-2xl p-5 items-center">
     <Text className="font-ibm-plex-arabic text-text-primary text-right mb-1">

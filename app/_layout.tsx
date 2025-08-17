@@ -24,6 +24,7 @@ import {
   IBMPlexSansArabic_700Bold,
 } from "@expo-google-fonts/ibm-plex-sans-arabic";
 import { useEffect } from "react";
+import { I18nManager } from "react-native";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -48,11 +49,20 @@ export default function RootLayout() {
     // Bold (700)
     IBMPlexSansArabic_700Bold,
   });
+  const slide = I18nManager.isRTL ? "slide_from_left" : "slide_from_right";
 
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: slide, // ← make pushes slide, not fade
+        gestureEnabled: true,
+      }}
+    />
+  );
 }
