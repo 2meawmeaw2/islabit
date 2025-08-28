@@ -1,20 +1,19 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
 import {
-  View,
+  ScrollView,
   Text,
   TouchableOpacity,
   useWindowDimensions,
-  ScrollView,
-  LayoutChangeEvent,
+  View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Props = {
   onBackPress?: () => void; // رجوع للشاشة السابقة
@@ -54,7 +53,7 @@ const Row: React.FC<RowProps> = ({ icon, title, desc, dir }) => {
       <View className="flex-row-reverse items-start">
         <View
           className="w-9 h-9 rounded-xl items-center justify-center -mt-[2px] ml-3"
-          style={{ backgroundColor: "rgba(0,174,239,0.12)" }}
+          style={{ backgroundColor: "#E0F2FE" }} // Replaced rgba(0,174,239,0.12) with solid light blue
         >
           <Ionicons name={icon} size={18} color="#00AEEF" />
         </View>

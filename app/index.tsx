@@ -1,14 +1,15 @@
-import React, { useEffect } from "react";
-import { View, Text, TouchableOpacity, StatusBar } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useEffect } from "react";
+import { Pressable, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
+  Easing,
+  useAnimatedStyle,
   useSharedValue,
   withTiming,
-  useAnimatedStyle,
-  Easing,
 } from "react-native-reanimated";
-import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const WelcomeMinimalUI: React.FC = ({}) => {
   const router = useRouter();
@@ -24,33 +25,34 @@ const WelcomeMinimalUI: React.FC = ({}) => {
       easing: Easing.out(Easing.cubic),
     });
   }, []);
-  const morePress = () => {
-    router.navigate("/moreInfo");
+  const press = (path: string) => {
+    router.navigate(`./${path}`);
   };
-  const startPress = () => {
-    router.navigate("/signUp");
+  const save = async () => {
+    try {
+      await AsyncStorage.setItem("habit1", "this is habit one ");
+      console.log("saved ig ");
+    } catch (err) {
+      alert(err);
+    }
   };
 
+  const load = async () => {
+    try {
+      let name = await AsyncStorage.getItem("habit1");
+      console.log("here's your habit ", name);
+    } catch (err) {
+      alert(err);
+    }
+  };
   return (
     <SafeAreaView className="bg-bg flex-1 ">
-      <StatusBar barStyle="light-content" backgroundColor="#00070A" />
-
-      {/* Top bar (skip) */}
-      <View className=" flex-row-reverse items-center justify-between px-6 pt-2">
-        <TouchableOpacity hitSlop={8}>
-          <Text className="font-ibm-plex-arabic-medium text-text-secondary">
-            تخطي
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Center hero */}
       <View className="  flex-1 items-center justify-center px-8">
         <Animated.View style={s} className="items-center">
           <View
             className=" w-16 h-16 rounded-2xl items-center justify-center mb-5"
             style={{
-              backgroundColor: "rgba(0,174,239,0.12)",
+              backgroundColor: "#E0F2FE", // Replaced rgba(0,174,239,0.12) with solid light blue
               borderWidth: 1,
               borderColor: "#00AEEF",
             }}
@@ -58,12 +60,24 @@ const WelcomeMinimalUI: React.FC = ({}) => {
             <Ionicons name="sparkles-outline" size={22} color="#00AEEF" />
           </View>
 
-          <Text className="w-full font-ibm-plex-arabic-bold text-text-brand text-[24px] text-center">
-            تنظيم اليوم
-          </Text>
-          <Text className="font-ibm-plex-arabic text-text-secondary text-[13px] text-center mt-2 leading-5">
-            رتّب مهامك ببساطة حول مواقيت الصلاة.
-          </Text>
+          <Pressable
+            onPress={save}
+            className="w-full font-ibm-plex-arabic-bold text-text-brand text-[24px] text-center"
+          >
+            <Text className="w-full font-ibm-plex-arabic-bold text-text-brand text-[24px] text-center">
+              {" "}
+              تنظيم اليوم
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={load}
+            className="font-ibm-plex-arabic text-text-secondary text-[13px] text-center mt-2 leading-5"
+          >
+            <Text className="font-ibm-plex-arabic text-text-secondary text-[13px] text-center mt-2 leading-5">
+              {" "}
+              رتّب مهامك ببساطة حول مواقيت الصلاة.
+            </Text>
+          </Pressable>
 
           {/* Primary CTA */}
           <TouchableOpacity
@@ -72,14 +86,44 @@ const WelcomeMinimalUI: React.FC = ({}) => {
             accessibilityRole="button"
             accessibilityLabel="ابدأ الآن"
           >
-            <Text className="font-ibm-plex-arabic-bold text-center w-full text-bg text-base">
+            <Text
+              onPress={() => press("testing")}
+              className="font-ibm-plex-arabic-bold text-center w-full text-bg text-base"
+            >
               ابدأ الآن
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="bg-text-brand rounded-2xl py-3 px-6 mt-6"
+            activeOpacity={0.9}
+            accessibilityRole="button"
+            accessibilityLabel="ابدأ الآن"
+          >
+            <Text
+              onPress={() => press("(time)")}
+              className="font-ibm-plex-arabic-bold text-center w-full text-bg text-base"
+            >
+              temo for u nigga
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="bg-text-brand rounded-2xl py-3 px-6 mt-6"
+            activeOpacity={0.9}
+            accessibilityRole="button"
+            accessibilityLabel="ابدأ الآن"
+          >
+            <Text
+              onPress={() => press("sign")}
+              className="font-ibm-plex-arabic-bold text-center w-full text-bg text-base"
+            >
+              login here sign up above the one above me
             </Text>
           </TouchableOpacity>
 
           {/* Secondary link */}
           <TouchableOpacity
-            onPress={morePress}
+            onPress={() => press("moreInfo")}
             className="mt-3 w-full "
             accessibilityRole="button"
             accessibilityLabel="المزيد من المعلومات"
@@ -97,13 +141,6 @@ const WelcomeMinimalUI: React.FC = ({}) => {
             </View>
           </TouchableOpacity>
         </Animated.View>
-      </View>
-
-      {/* Tiny footer (optional) */}
-      <View className="px-8 pb-8">
-        <Text className="font-ibm-plex-arabic text-text-disabled text-[11px] text-center">
-          باستخدامك للتطبيق، أنت توافق على الشروط وسياسة الخصوصية.
-        </Text>
       </View>
     </SafeAreaView>
   );

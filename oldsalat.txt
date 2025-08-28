@@ -1,0 +1,294 @@
+const SectionCard: React.FC<{
+    section: SectionBlock;
+    tasksForSection: Task[];
+    collapsed: boolean;
+    isCurrent: boolean;
+    isNext: boolean;
+    onToggle: () => void;
+    onAdd: () => void;
+  
+    addingPrayer: PrayerKey | null;
+    draftTitle: string;
+    setDraftTitle: (t: string) => void;
+    draftNotes: string;
+    setDraftNotes: (t: string) => void;
+    submitDraft: () => void;
+    cancelDraft: () => void;
+    canSubmit: boolean;
+    submitting: boolean;
+    titleLimit: number;
+    descLimit: number;
+  
+    onToggleTask: (id: string) => void;
+    onEditTask: (task: Task) => void;
+    onDeleteTask: (id: string) => void;
+  }> = ({
+    section,
+    tasksForSection,
+    collapsed,
+    isCurrent,
+    isNext,
+    onToggle,
+    onAdd,
+  
+    addingPrayer,
+    draftTitle,
+    setDraftTitle,
+    draftNotes,
+    setDraftNotes,
+    submitDraft,
+    cancelDraft,
+    canSubmit,
+    submitting,
+    titleLimit,
+    descLimit,
+  
+    onToggleTask,
+    onEditTask,
+    onDeleteTask,
+  }) => {
+    const dropIconRotation = useSharedValue<number>(collapsed ? 0 : 180);
+    const dropIconOpacity = useSharedValue<number>(0);
+  
+    const hasTasksForSection = tasksForSection.length > 0;
+  
+    useEffect(() => {
+      dropIconOpacity.value = hasTasksForSection ? 1 : 0;
+    }, [hasTasksForSection]);
+  
+    const dropIconStyles = useAnimatedStyle(() => ({
+      transform: [{ rotateZ: `${dropIconRotation.value}deg` }],
+      opacity: dropIconOpacity.value,
+    }));
+  
+    const handleHeaderPress = () => {
+      dropIconRotation.value = withTiming(collapsed ? 180 : 0, { duration: 250 });
+      onToggle();
+    };
+  
+    // local focus + ref for quick-add inputs
+    const [titleFocused, setTitleFocused] = useState(false);
+    const [descFocused, setDescFocused] = useState(false);
+    const descRef = useRef<RNTextInput | null>(null);
+  
+    return (
+      <Animated.View
+        layout={LinearTransition}
+        className="bg-fore px-4 py-1 rounded-2xl "
+        style={{ zIndex: 2 }}
+      >
+        {/* Header */}
+        <Animated.View layout={LinearTransition} style={{ paddingVertical: 6 }}>
+          <View className="flex-row-reverse items-center justify-between">
+            <TouchableOpacity
+              onPress={() => {
+                if (!hasTasksForSection) {
+                  handleHeaderPress();
+                  onAdd();
+                } else {
+                  handleHeaderPress();
+                }
+              }}
+              className="flex-row-reverse items-center flex-1 relative pr-10"
+              activeOpacity={0.8}
+            >
+              <View
+                className="w-8 h-8 rounded-xl items-center absolute top-0 justify-center ml-2"
+                style={{ backgroundColor: rgba(COLORS[section.prayerKey], 0.16) }}
+              >
+                <Text className="text-text-primary text-sm">{section.emoji}</Text>
+              </View>
+  
+              <View className="flex-1 gap-2">
+                <Text
+                  className={`font-ibm-plex-arabic-bold text-[18px] ${
+                    isCurrent
+                      ? "text-text-brand"
+                      : isNext
+                        ? "text-text-white"
+                        : "text-text-primary"
+                  } text-base text-right`}
+                >
+                  {section.title}
+                  {isCurrent ? " • الآن" : isNext ? " • التالية" : ""}
+                </Text>
+                <Text className="font-ibm-plex-arabic mr-1 text-text-secondary text-[11px] text-right">
+                  {section.time}
+                </Text>
+              </View>
+  
+              {!hasTasksForSection ? (
+                <Animated.View
+                  key="no-tasks"
+                  entering={FadeIn.duration(100)}
+                  exiting={FadeOut.duration(200)}
+                  className="ml-2 px-2 rounded-xl bg-fore items-center justify-center"
+                  style={{ height: SP.hit, minWidth: SP.hit }}
+                >
+                  <Text className="text-xs font-ibm-plex-arabic-light text-text-secondary">
+                    لا مهام
+                  </Text>
+                </Animated.View>
+              ) : (
+                <Animated.View
+                  key="chev"
+                  entering={FadeIn.duration(100)}
+                  exiting={FadeOut.duration(200)}
+                  style={[dropIconStyles, { marginLeft: 8 }]}
+                >
+                  <Ionicons name={"chevron-down"} size={18} color="#94A3B8" />
+                </Animated.View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                // Ensure the section is OPEN before showing quick add
+                if (collapsed) {
+                  // animate chevron and expand
+                  dropIconRotation.value = withTiming(180, { duration: 250 });
+                  onToggle();
+                }
+                onAdd();
+              }}
+              className="rounded-lg bg-text-brand items-center justify-center"
+              activeOpacity={0.9}
+              style={{
+                width: SP.hit,
+                height: SP.hit,
+                position: "relative",
+                zIndex: 3,
+              }}
+              accessibilityLabel="إضافة مهمة"
+            >
+              <Ionicons name="add" size={18} color="#0B1623" />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+  
+        {/* Rows (inline) */}
+        {!collapsed && (
+          <Animated.View layout={Layout.springify()}>
+            {hasTasksForSection &&
+              tasksForSection.map((item) => (
+                <ActionCard
+                  title="عادة ما "
+                  subtitle="وصف للعادة قصير "
+                  streak={7}
+                  completed={false}
+                  onPress={() => {}}
+                  onMore={() => {}}
+                  onToggle={() => {}}
+                />
+              ))}
+  
+            {/* Quick add area (same visuals as before) */}
+            {addingPrayer === section.prayerKey && (
+              <Animated.View
+                entering={FadeInDown.duration(300)}
+                exiting={FadeOut.duration(250)}
+                className="mt-2 rounded-xl bg-fore border border-border-secondary p-3"
+                style={Platform.select({
+                  ios: {
+                    shadowColor: "#000",
+                    shadowOpacity: 0.05,
+                    shadowRadius: 10,
+                    shadowOffset: { width: 0, height: 4 },
+                  },
+                  android: { elevation: 1 },
+                })}
+              >
+                {/* Header: actions (RTL) */}
+                <View className="flex-row-reverse items-center justify-between mb-2">
+                  <Text className="text-right text-sm font-ibm-plex-arabic text-text-brand">
+                    مهمة جديدة
+                  </Text>
+  
+                  <View className="flex-row-reverse items-center">
+                    <Pressable
+                      onPress={submitDraft}
+                      disabled={!canSubmit || submitting}
+                      android_ripple={{ borderless: true }}
+                      className={`ml-1 rounded-full p-1 ${
+                        canSubmit && !submitting ? "opacity-100" : "opacity-40"
+                      }`}
+                      accessibilityRole="button"
+                      accessibilityLabel="تأكيد"
+                    >
+                      {submitting ? (
+                        <ActivityIndicator size="small" color="#00AEEF" />
+                      ) : (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={22}
+                          color="#00AEEF"
+                        />
+                      )}
+                    </Pressable>
+  
+                    <Pressable
+                      onPress={cancelDraft}
+                      android_ripple={{ borderless: true }}
+                      className="rounded-full p-1"
+                      accessibilityRole="button"
+                      accessibilityLabel="إلغاء"
+                    >
+                      <Ionicons name="close-circle" size={22} color="#94A3B8" />
+                    </Pressable>
+                  </View>
+                </View>
+  
+                {/* Title */}
+                <View className="mb-2">
+                  <TextInput
+                    value={draftTitle}
+                    onChangeText={(t) =>
+                      t.length <= titleLimit && setDraftTitle(t)
+                    }
+                    onFocus={() => setTitleFocused(true)}
+                    onBlur={() => setTitleFocused(false)}
+                    placeholder="عنوان المهمة…"
+                    placeholderTextColor="#94A3B8"
+                    className={`rounded-lg border px-3 py-2 text-right font-ibm-plex-arabic text-text-primary ${
+                      titleFocused ? "border-[#00AEEF]" : "border-slate-200"
+                    }`}
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => descRef.current?.focus()}
+                    accessibilityLabel="عنوان المهمة"
+                  />
+                  <Text className="mt-0.5 text-[10px] text-slate-400">
+                    {draftTitle.length}/{titleLimit}
+                  </Text>
+                </View>
+  
+                {/* Description */}
+                <View>
+                  <TextInput
+                    ref={descRef}
+                    value={draftNotes}
+                    onChangeText={(t) =>
+                      t.length <= descLimit && setDraftNotes(t)
+                    }
+                    onFocus={() => setDescFocused(true)}
+                    onBlur={() => setDescFocused(false)}
+                    placeholder="أضف تفاصيل، روابط، أو ملاحظات…"
+                    placeholderTextColor="#94A3B8"
+                    multiline
+                    textAlignVertical="top"
+                    className={`min-h-[80px] rounded-xl border px-3 py-2 text-right font-ibm-plex-arabic text-text-primary ${
+                      descFocused ? "border-[#00AEEF]" : "border-slate-200"
+                    }`}
+                    accessibilityLabel="وصف المهمة"
+                  />
+                  <Text className="mt-0.5 text-[10px] text-slate-400">
+                    {draftNotes.length}/{descLimit}
+                  </Text>
+                </View>
+              </Animated.View>
+            )}
+          </Animated.View>
+        )}
+      </Animated.View>
+    );
+  };
+  
