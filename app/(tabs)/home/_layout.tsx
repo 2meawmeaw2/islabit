@@ -20,8 +20,24 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
+        name="explore-bundles"
+        options={{
+          headerShown: false,
+          title: "اكتشف الرحلات",
+          animation: "slide_from_right",
+        }}
+      />
+      <Stack.Screen
+        name="explore-habits"
+        options={{
+          headerShown: false,
+          title: "اكتشف العادات",
+          animation: "slide_from_right",
+        }}
+      />
+      <Stack.Screen
         name="FreeCommit"
-        options={{ headerShown: false, animation: "slide_from_right" }}
+        options={{ headerShown: false, animation: "slide_from_left" }}
       />
 
       <Stack.Screen

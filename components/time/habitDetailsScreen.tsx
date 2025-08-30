@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { CategorySelector } from "../CategorySelector";
 import {
   ActivityIndicator,
   Alert,
@@ -591,6 +592,40 @@ export const HabitDetailsScreen: React.FC<HabitDetailsScreenProps> = ({
             )}
           </Section>
 
+          {/* Category Section */}
+          <Section icon="pricetag" title="الفئة">
+            {isEditing ? (
+              <CategorySelector
+                selectedCategory={habit.category}
+                onCategoryChange={(category) => updateHabit({ category })}
+                title=""
+              />
+            ) : (
+              <View
+                style={[
+                  styles.categoryBadge,
+                  {
+                    backgroundColor: `${habit.category.hexColor}15`,
+                    borderColor: habit.category.hexColor,
+                  },
+                ]}
+              >
+                <Text
+                  className="font-ibm-plex-arabic-medium text-sm ml-3"
+                  style={{ color: habit.category.hexColor }}
+                >
+                  {habit.category.text}
+                </Text>
+                <View
+                  style={[
+                    styles.categoryDot,
+                    { backgroundColor: habit.category.hexColor },
+                  ]}
+                />
+              </View>
+            )}
+          </Section>
+
           {/* Days Section */}
           <Section icon="calendar" title="أيام التنفيذ">
             <DayPills
@@ -876,6 +911,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
     alignSelf: "center",
+  },
+  categoryBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    alignSelf: "center",
+  },
+  categoryDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
 
   // Salat

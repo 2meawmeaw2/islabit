@@ -69,13 +69,6 @@ export default function RootLayout() {
     >
       <Stack.Screen name="index" />
 
-      <Stack.Screen name="(time)" />
-      <Stack.Screen name="testing" />
-      <Stack.Screen
-        name="languages"
-        options={{ animation: "slide_from_right" }}
-      />
-
       <Stack.Screen name="sign" />
       <Stack.Screen name="moreInfo" />
     </Stack>

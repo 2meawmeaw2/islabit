@@ -202,14 +202,6 @@ const OrganizeModes: React.FC = () => {
       completed: habit.completed || [],
       selectedDate: getDateStr(selectedDate), // Add current selected date
     };
-
-    router.push({
-      pathname: "/(tabs)/(time)/habitDetails",
-      params: {
-        habit: JSON.stringify(habitData),
-        habitId: habit.id,
-      },
-    });
   };
 
   if (isLoading) {
@@ -224,8 +216,21 @@ const OrganizeModes: React.FC = () => {
   }
 
   const handleAddHabit = () => {
-    router.navigate("/addNewHabit");
+    router.push("/(tabs)/(time)/addNewHabit");
   };
+
+  const clearAllStorage = async () => {
+    try {
+      await AsyncStorage.clear();
+      alert("Storage cleared successfully!");
+      // Reload habits with empty array
+      setHabits([]);
+    } catch (error) {
+      console.error("Error clearing storage:", error);
+      alert("Failed to clear storage");
+    }
+  };
+
   return (
     <>
       <SafeAreaView className="h-full font-ibm-plex-arabic bg-bg">
@@ -240,12 +245,20 @@ const OrganizeModes: React.FC = () => {
               {fmtArabicDateMonthAndNumber(new Date())}
             </Text>
           </View>
-          <Pressable
-            onPress={handleAddHabit}
-            className="bg-text-brand rounded-full justify-center items-center h-10 w-10"
-          >
-            <Ionicons name="add" size={30} color="white" />
-          </Pressable>
+          <View className="flex-row">
+            <Pressable
+              onPress={clearAllStorage}
+              className="bg-red-500 rounded-full justify-center items-center h-10 w-10 mr-2"
+            >
+              <Ionicons name="trash" size={20} color="white" />
+            </Pressable>
+            <Pressable
+              onPress={handleAddHabit}
+              className="bg-text-brand rounded-full justify-center items-center h-10 w-10"
+            >
+              <Ionicons name="add" size={30} color="white" />
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView
@@ -257,48 +270,46 @@ const OrganizeModes: React.FC = () => {
             selectedDate={selectedDate}
             onChange={(date: Date) => setSelectedDate(date)}
           />
-          <View className="my-2 mx-4">
-            <NextPrayerCard />
-          </View>
-
-          {habits.length === 0 ? (
-            <View className="mx-4 mt-8 items-center">
-              <View className="bg-bg rounded-2xl p-8 items-center border border-border-secondary">
-                <Ionicons name="leaf-outline" size={48} color="#6C7684" />
-                <Text className="text-text-primary font-ibm-plex-arabic-bold text-xl mt-4 text-center">
-                  ابدأ رحلتك
-                </Text>
-                <Text className="text-text-disabled font-ibm-plex-arabic text-base mt-2 text-center">
-                  أضف عاداتك اليومية لتتبع تقدمك
-                </Text>
-                <Pressable
-                  onPress={handleAddHabit}
-                  className="mt-6 bg-text-brand rounded-full px-6 py-3 flex-row-reverse items-center"
-                >
-                  <Ionicons name="add-circle" size={20} color="white" />
-                  <Text className="text-white font-ibm-plex-arabic-medium mr-2">
-                    أضف عادة جديدة
+          <View className="mt-6">
+            {habits.length === 0 ? (
+              <View className="mx-4 mt-8 items-center">
+                <View className="bg-bg rounded-2xl p-8 items-center border border-border-secondary">
+                  <Ionicons name="leaf-outline" size={48} color="#6C7684" />
+                  <Text className="text-text-primary font-ibm-plex-arabic-bold text-xl mt-4 text-center">
+                    ابدأ رحلتك
                   </Text>
-                </Pressable>
+                  <Text className="text-text-disabled font-ibm-plex-arabic text-base mt-2 text-center">
+                    أضف عاداتك اليومية لتتبع تقدمك
+                  </Text>
+                  <Pressable
+                    onPress={handleAddHabit}
+                    className="mt-6 bg-text-brand rounded-full px-6 py-3 flex-row-reverse items-center"
+                  >
+                    <Ionicons name="add-circle" size={20} color="white" />
+                    <Text className="text-white font-ibm-plex-arabic-medium mr-2">
+                      أضف عادة جديدة
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
-            </View>
-          ) : (
-            PRAYERS.map((prayer, idx) => (
-              <SalatHabitsDisplay
-                key={prayer.name}
-                salatName={prayer.name}
-                salatTime={prayer.time}
-                habits={getHabitsForPrayer(prayer.key)}
-                onToggleHabit={(id, completed) =>
-                  handleToggleHabit(id, completed, prayer.key)
-                }
-                onHabitPress={(habit) =>
-                  handleHabitPress({ ...habit, currentPrayer: prayer.key })
-                }
-                onAddHabit={handleAddHabit}
-              />
-            ))
-          )}
+            ) : (
+              PRAYERS.map((prayer, idx) => (
+                <SalatHabitsDisplay
+                  key={prayer.name}
+                  salatName={prayer.name}
+                  salatTime={prayer.time}
+                  habits={getHabitsForPrayer(prayer.key)}
+                  onToggleHabit={(id, completed) =>
+                    handleToggleHabit(id, completed, prayer.key)
+                  }
+                  onHabitPress={(habit) =>
+                    handleHabitPress({ ...habit, currentPrayer: prayer.key })
+                  }
+                  onAddHabit={handleAddHabit}
+                />
+              ))
+            )}
+          </View>
         </ScrollView>
       </SafeAreaView>
     </>

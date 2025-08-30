@@ -5,7 +5,6 @@ import { PrayerKey } from "@/types/salat";
 import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View, ViewStyle } from "react-native";
 type PrayerTime = { key: PrayerKey; name: string; time: string; emoji: string };
-type NextPrayer = { name: string; time: string; emoji?: string };
 type Props = {
   prayerTimes?: PrayerTime[];
   isCurrent?: (k: PrayerKey) => boolean;
@@ -16,29 +15,13 @@ type Props = {
 };
 
 const COLORS = {
-  bg: "#1A1E1F",
-  textMuted: "#9CA3AF", // Replaced rgba(255,255,255,0.55)
-  text: "#FFFFFF",
-  accent: "#00AEEF",
-  border: "#374151", // Replaced rgba(255,255,255,0.08)
+  bg: "#1A1A1A",
+  textMuted: "#6B7280",
+  text: "#F9FAFB",
+  accent: "#4B9AB5",
+  border: "transparent",
 };
 
-function rgba(hex: string, a: number) {
-  const h = hex.replace("#", "");
-  const bigint = parseInt(
-    h.length === 3
-      ? h
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : h,
-    16
-  );
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  return `rgba(${r}, ${g}, ${b}, ${a})`;
-}
 const { current, next } = useMemo(
   () => currentAndNext(PRAYERS, new Date()),
   [PRAYERS, new Date()]
@@ -90,7 +73,7 @@ const NextPrayerCard: React.FC<Props> = ({
             style={[styles.title, styles.right]}
             className="font-ibm-plex-arabic-semibold"
           >
-            {next.name} • {next.time} {next.emoji ?? ""}
+            {next.name} • {next.time}
           </Text>
         </View>
 
@@ -116,8 +99,8 @@ const NextPrayerCard: React.FC<Props> = ({
               ? "#EF4444" // red after threshold
               : COLORS.accent // blue while current
             : upcoming
-              ? "#FFFFFF" // subtle for "next"
-              : "#6C7684"; // slate-ish for others
+              ? COLORS.text // subtle for "next"
+              : COLORS.textMuted; // muted for others
 
           return (
             <View key={p.key} style={styles.pillItem}>
@@ -136,11 +119,9 @@ export default NextPrayerCard;
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.bg,
-    borderColor: COLORS.border,
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
 
   // layout
@@ -151,11 +132,11 @@ const styles = StyleSheet.create({
   },
   nextBlock: {
     flex: 1,
-    marginLeft: 12, // works with row-reverse (pushes away from countdown)
+    marginLeft: 16,
   },
   countdownBlock: {
     alignItems: "center",
-    minWidth: 88,
+    minWidth: 96,
   },
 
   // text
@@ -181,21 +162,21 @@ const styles = StyleSheet.create({
     flexDirection: "row-reverse",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 12,
+    marginTop: 16,
   },
   pillItem: {
-    width: "18%",
+    width: "16%",
     alignItems: "center",
   },
   dot: {
-    width: 10,
-    height: 10,
+    width: 8,
+    height: 8,
     borderRadius: 999,
   },
   pillTime: {
-    marginTop: 6,
-    fontSize: 10,
+    marginTop: 8,
+    fontSize: 11,
     color: COLORS.accent, // same “brand” blue as WeekStrip
-    fontWeight: "600",
+    fontWeight: "500",
   },
 });

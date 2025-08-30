@@ -35,6 +35,7 @@ type SalatHabit = {
   }[]; // Array of completion records with date and prayer
   priority?: string; // supports custom labels
   priorityColor?: string;
+  category?: { text: string; hexColor: string }; // Category for the habit
   isCompletedForSelectedDay?: boolean;
 };
 
@@ -64,7 +65,7 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
     // Animation values
     const headerOpacity = useSharedValue(0);
     const progressScale = useSharedValue(0);
-
+    const chevronRotation = useSharedValue(0);
     // Check if habit is completed for the selected day
     const completedCount = habits.filter(
       (h) => h.isCompletedForSelectedDay
@@ -114,16 +115,17 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
     }, [allCompleted, wasAllCompleted, totalHabits]);
 
     // Announce achievement
-    useEffect(() => {
-      if (allCompleted) {
-        AccessibilityInfo.announceForAccessibility(
-          `أكملت جميع عادات ${salatName}`
-        );
-      }
-    }, [allCompleted, salatName]);
 
     const toggleCollapse = () => {
       setIsCollapsed(!isCollapsed);
+
+      // Animate chevron rotation
+      if (!reducedMotion && allCompleted) {
+        chevronRotation.value = withTiming(!isCollapsed ? 180 : 0, {
+          duration: 300,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        });
+      }
     };
 
     const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -134,16 +136,20 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
       transform: [{ scale: progressScale.value }],
     }));
 
+    const chevronAnimatedStyle = useAnimatedStyle(() => ({
+      transform: [{ rotate: chevronRotation.value + "deg" }],
+    }));
+
     return (
       <Animated.View
         entering={FadeInDown.duration(300).springify()}
         layout={Layout.springify().damping(15)}
-        className="mx-4 mb-6 mt-4"
+        className="mx-2 mb-6 mt-4 rounded-2xl border border-slate-600/30 p-3 justify-center"
       >
         {/* Clean Salat Header */}
         <AnimatedPressable
           onPress={shouldShowCollapsed ? toggleCollapse : undefined}
-          className={`mb-4 ${shouldShowCollapsed ? "cursor-pointer" : ""}`}
+          className={`  ${shouldShowCollapsed ? "cursor-pointer" : ""}`}
           style={headerAnimatedStyle}
           accessibilityRole="button"
           accessibilityLabel={`${salatName} - ${completedCount} من ${totalHabits} عادات مكتملة`}
@@ -154,7 +160,7 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
                 <Animated.Text
                   entering={FadeInRight.duration(300)}
                   exiting={FadeOutRight.duration(300)}
-                  className={`font-ibm-plex-arabic-bold text-xl  ${
+                  className={`font-ibm-plex-arabic-bold text-xl ${
                     allCompleted ? "text-text-brand" : "text-text-primary"
                   }`}
                 >
@@ -165,15 +171,20 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
 
             {/* Simple Progress Circle */}
             <View className="flex-row-reverse items-center gap-2">
+              <View className="flex-row-reverse items-center gap-1  px-2 py-1 rounded-lg">
+                <Text className="text-slate-200 text-xs font-ibm-plex-arabic-light">
+                  12:44
+                </Text>
+              </View>
               {completionPercentage === 100 ? (
                 <Animated.View
                   key={1}
                   layout={Layout.springify()}
                   entering={FadeIn.duration(200)}
                   exiting={FadeOut.duration(200)}
-                  className={`w-10 h-10 rounded-full items-center justify-center bg-text-brand`}
+                  className="w-10 h-10 rounded-full items-center justify-center bg-text-brand"
                 >
-                  <Text className={`text-lg text-white`}>✓</Text>
+                  <Text className="text-lg text-white">✓</Text>
                 </Animated.View>
               ) : (
                 <Animated.View
@@ -182,6 +193,7 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
                   entering={FadeIn.duration(200)}
                   exiting={FadeOut.duration(200)}
                   style={progressAnimatedStyle}
+                  className="items-center justify-center"
                 >
                   <PercentageCircle
                     showLabel={false}
@@ -197,18 +209,17 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
                 </Animated.View>
               )}
 
-              {shouldShowCollapsed && (
-                <AnimatedPressable
-                  entering={FadeInLeft.duration(300)}
-                  exiting={FadeOutLeft.duration(300)}
-                  onPress={toggleCollapse}
-                  className="p-2"
-                  accessibilityLabel="طي القائمة"
-                  accessibilityRole="button"
-                >
-                  <Ionicons name="chevron-down" size={16} color="#6C7684" />
-                </AnimatedPressable>
-              )}
+              <AnimatedPressable
+                entering={FadeInLeft.duration(300)}
+                exiting={FadeOutLeft.duration(300)}
+                onPress={toggleCollapse}
+                style={chevronAnimatedStyle}
+                className="p-2 items-center justify-center"
+                accessibilityLabel="طي القائمة"
+                accessibilityRole="button"
+              >
+                <Ionicons name="chevron-down" size={16} color="#6C7684" />
+              </AnimatedPressable>
             </View>
           </View>
         </AnimatedPressable>
@@ -219,10 +230,8 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
             entering={reducedMotion ? undefined : FadeIn.duration(300)}
             exiting={reducedMotion ? undefined : FadeOutUp.duration(300)}
             layout={reducedMotion ? undefined : Layout.springify().damping(15)}
-            className={`rounded-xl border overflow-hidden ${
-              allCompleted
-                ? "bg-bg border-text-brand"
-                : "bg-bg border-text-brand"
+            className={`rounded-xl mt-4  overflow-hidden ${
+              allCompleted ? "bg-slate-800/50" : "bg-slate-800/30"
             }`}
           >
             {/* Simple Header when all completed */}
@@ -230,7 +239,7 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
               <Animated.View
                 entering={reducedMotion ? undefined : FadeIn}
                 exiting={reducedMotion ? undefined : FadeOut}
-                className="p-4 border-b border-text-brand flex-row-reverse items-center justify-between"
+                className="p-4 flex-row-reverse items-center justify-between bg-slate-700/40 rounded-t-xl"
               >
                 <View className="flex-row-reverse items-center gap-2">
                   <Animated.Text
@@ -241,22 +250,12 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
                     جميع العادات مكتملة
                   </Animated.Text>
                 </View>
-                <AnimatedPressable
-                  entering={FadeInLeft.duration(300)}
-                  exiting={FadeOutLeft.duration(300)}
-                  onPress={toggleCollapse}
-                  className="p-2"
-                  accessibilityLabel="طي القائمة"
-                  accessibilityRole="button"
-                >
-                  <Ionicons name="chevron-up" size={16} color="#6C7684" />
-                </AnimatedPressable>
               </Animated.View>
             )}
 
             {habits.length === 0 ? (
-              <View className="py-8 px-4 items-center">
-                <Text className="text-text-disabled font-ibm-plex-arabic text-sm mt-2">
+              <View className="py-8 px-4 items-center justify-center">
+                <Text className="text-text-disabled font-ibm-plex-arabic text-sm mt-2 text-center">
                   لا توجد عادات لهذا الوقت
                 </Text>
                 {onAddHabit && (
@@ -264,19 +263,19 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
                     onPress={() => {
                       onAddHabit();
                     }}
-                    className="mt-3 bg-text-brand rounded-lg px-4 py-2"
+                    className="mt-3 bg-text-brand rounded-lg px-4 py-2 items-center justify-center"
                     entering={reducedMotion ? undefined : FadeInUp.delay(200)}
                     accessibilityLabel="إضافة عادة جديدة"
                     accessibilityRole="button"
                   >
-                    <Text className="text-white font-ibm-plex-arabic-medium text-sm">
+                    <Text className="text-white font-ibm-plex-arabic-medium text-sm text-center">
                       إضافة عادة جديدة
                     </Text>
                   </AnimatedPressable>
                 )}
               </View>
             ) : (
-              <View className="p-4 gap-3">
+              <View className="p-4 gap-4">
                 {habits
                   .sort((a, b) => {
                     // First, sort by completion status (completed habits go to bottom)
@@ -336,9 +335,8 @@ const HabitItem: React.FC<{
 
   const isCompletedToday = habit.isCompletedForSelectedDay;
 
-  const [completedForAnimation, setCompletedForAnimation] = useState<boolean>(
-    isCompletedToday || false
-  );
+  // Use shared value instead of state to avoid unnecessary re-renders
+  const isCompletedAnimation = useSharedValue(isCompletedToday ? 1 : 0);
 
   React.useEffect(() => {
     // Enhanced entrance animation with staggered timing
@@ -365,7 +363,9 @@ const HabitItem: React.FC<{
       easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
     });
 
-    setCompletedForAnimation(isCompletedToday || false);
+    // Update the shared value instead of using React state
+    isCompletedAnimation.value = isCompletedToday ? 1 : 0;
+
     // Sync opacity with completion state as the single source
     opacity.value = withTiming(isCompletedToday ? 0.6 : 1, {
       duration: 400,
@@ -374,53 +374,63 @@ const HabitItem: React.FC<{
   }, [isCompletedToday, index]);
 
   const handleToggle = () => {
-    if (reducedMotion) {
-      setCompletedForAnimation(!isCompletedToday);
-      onToggle(habit.id, !isCompletedToday);
-    } else {
-      // Enhanced press animation with smooth timing
-      scale.value = withSequence(
-        withTiming(0.94, {
-          duration: 120,
-          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-        }),
-        withTiming(1.03, {
-          duration: 120,
-          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-        }),
-        withTiming(1, {
-          duration: 160,
-          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-        })
+    try {
+      // IMPORTANT: Create a local reference to avoid stale closures
+      const habitId = habit.id;
+      const currentCompletionState = isCompletedToday;
+      const newCompletionState = !currentCompletionState;
+
+      // 1. Update animation shared value directly (no React state update)
+      isCompletedAnimation.value = newCompletionState ? 1 : 0;
+
+      // 2. Set up animations
+      if (!reducedMotion) {
+        // Enhanced press animation with smooth timing
+        scale.value = withSequence(
+          withTiming(0.94, {
+            duration: 120,
+            easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          }),
+          withTiming(1.03, {
+            duration: 120,
+            easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          }),
+          withTiming(1, {
+            duration: 160,
+            easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          })
+        );
+
+        // Enhanced checkmark animation with smooth timing
+        checkScale.value = withSequence(
+          withTiming(1.15, {
+            duration: 200,
+            easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          }),
+          withTiming(1, {
+            duration: 200,
+            easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          })
+        );
+      }
+
+      // 3. Update opacity animation immediately
+      opacity.value = withTiming(newCompletionState ? 0.6 : 1, {
+        duration: 500,
+        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+      });
+
+      // 4. Announce state change for accessibility
+      AccessibilityInfo.announceForAccessibility(
+        currentCompletionState ? `ألغيت ${habit.title}` : `أكملت ${habit.title}`
       );
 
-      // Update local state
-      setCompletedForAnimation(!isCompletedToday);
-
-      // Enhanced checkmark animation with smooth timing
-      checkScale.value = withSequence(
-        withTiming(1.15, {
-          duration: 200,
-          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-        }),
-        withTiming(1, {
-          duration: 200,
-          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-        })
-      );
-
-      onToggle(habit.id, !isCompletedToday);
+      // 5. Call the toggle callback directly - no need for requestAnimationFrame
+      // The navigation context issue was caused by the React state update, not the callback
+      onToggle(habitId, newCompletionState);
+    } catch (error) {
+      console.error("Error in toggle handler:", error);
     }
-
-    // Announce state change
-    AccessibilityInfo.announceForAccessibility(
-      isCompletedToday ? `ألغيت ${habit.title}` : `أكملت ${habit.title}`
-    );
-    // Update opacity directly as the only source
-    opacity.value = withTiming(!isCompletedToday ? 0.6 : 1, {
-      duration: 500,
-      easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-    });
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -454,37 +464,39 @@ const HabitItem: React.FC<{
           ? undefined
           : LinearTransition.springify().mass(0.8).damping(25).stiffness(80)
       }
-      style={[animatedStyle]}
-      className="mb-2 last:mb-0"
+      style={[animatedStyle, { marginBottom: 10 }]}
+      className="mb-10 last:mb-0"
     >
-      <AnimatedPressable
-        onPress={() => {
-          onPress(habit);
-        }}
-        className="flex-row-reverse gap-2 items-center bg-fore rounded-lg p-3 border border-text-brand shadow-sm"
-        accessibilityRole="button"
-        accessibilityLabel={`${habit.title} - ${isCompletedToday ? "مكتمل" : "غير مكتمل"}`}
-      >
+      <Animated.View className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-xl p-4 shadow-lg border border-slate-600/30">
         {/* Enhanced Toggle Button with better animations */}
         <AnimatedPressable
           onPress={handleToggle}
-          className="w-10 h-10 rounded-full bg-slate-700 items-center justify-center mr-3 border border-text-brand"
+          className="w-12 h-12 rounded-full bg-slate-600/90 items-center justify-center mr-4 border border-slate-500/40"
           accessibilityRole="checkbox"
           accessibilityState={{ checked: isCompletedToday }}
           accessibilityLabel="تبديل حالة الإكمال"
         >
-          {completedForAnimation ? (
+          <Animated.View
+            style={{ opacity: isCompletedAnimation }}
+            className="absolute items-center justify-center"
+          >
             <Animated.View
               style={checkAnimatedStyle}
               entering={FadeIn.duration(400).easing(
                 Easing.bezier(0.25, 0.46, 0.45, 0.94)
               )}
+              className="items-center justify-center"
             >
-              <View className="w-5 h-5 rounded-full bg-white items-center justify-center">
-                <Text className="text-slate-900 text-xs font-bold">✓</Text>
+              <View className="w-6 h-6 rounded-full bg-green-400 items-center justify-center shadow-sm">
+                <Text className="text-slate-900 text-sm font-bold">✓</Text>
               </View>
             </Animated.View>
-          ) : (
+          </Animated.View>
+
+          <Animated.View
+            style={{ opacity: isCompletedAnimation.value === 1 ? 0 : 1 }}
+            className="absolute items-center justify-center"
+          >
             <Animated.View
               entering={FadeIn.duration(400).easing(
                 Easing.bezier(0.25, 0.46, 0.45, 0.94)
@@ -492,31 +504,36 @@ const HabitItem: React.FC<{
               exiting={FadeOut.duration(400).easing(
                 Easing.bezier(0.25, 0.46, 0.45, 0.94)
               )}
+              className="items-center justify-center"
             >
-              <View className="w-5 h-5 rounded-full border-2 border-text-brand" />
+              <View className="w-6 h-6 rounded-full bg-slate-500/60" />
             </Animated.View>
-          )}
+          </Animated.View>
         </AnimatedPressable>
 
         {/* Clean Habit Content with smooth transitions */}
-        <Animated.View
+        <AnimatedPressable
+          onPress={() => console.log(`Habit tapped: ${habit.id}`)} // Safe no-op handler
           className="flex-1"
+          accessibilityRole="button"
+          accessibilityLabel={`${habit.title} - ${isCompletedToday ? "مكتمل" : "غير مكتمل"}`}
           layout={LinearTransition.springify()
             .mass(0.6)
             .damping(30)
             .stiffness(100)}
         >
           <View className="flex-row-reverse items-center mb-1 ">
-            <Text
-              className={`font-ibm-plex-arabic-semibold text-lg flex-1 text-right py-2 ${
-                completedForAnimation
-                  ? "text-text-disabled line-through"
-                  : "text-white"
-              }`}
+            <Animated.Text
+              className={`font-ibm-plex-arabic-medium text-base flex-1 text-right py-2`}
+              style={{
+                color: isCompletedAnimation.value === 1 ? "#9CA3AF" : "#FFFFFF",
+                textDecorationLine:
+                  isCompletedAnimation.value === 1 ? "line-through" : "none",
+              }}
               numberOfLines={1}
             >
               {habit.title}
-            </Text>
+            </Animated.Text>
 
             {/* Priority Badge (custom name with color or dot) */}
             {habit.priority && (
@@ -526,15 +543,18 @@ const HabitItem: React.FC<{
                   style={{
                     color:
                       habit.priorityColor ||
-                      (completedForAnimation ? "#9CA3AF" : "#FFFFFF"),
+                      (isCompletedToday ? "#9CA3AF" : "#FFFFFF"),
                   }}
                 >
                   {getPriorityIndicator(habit.priority, habit.priorityColor)}
                 </Text>
                 {!["low", "medium", "high"].includes(habit.priority as any) && (
                   <Text
-                    className="text-xs ml-1 font-ibm-plex-arabic"
-                    style={{ color: habit.priorityColor || "#22C55E" }}
+                    className=" ml-1 font-ibm-plex-arabic"
+                    style={{
+                      color: habit.priorityColor || "#22C55E",
+                      fontSize: 10,
+                    }}
                     numberOfLines={1}
                   >
                     {habit.priority}
@@ -542,56 +562,20 @@ const HabitItem: React.FC<{
                 )}
               </View>
             )}
-          </View>
 
-          {/* Simple Description with smooth show/hide */}
-
-          {/* Enhanced Streak Display with Islamic Design */}
-          {habit.streak > 0 && (
-            <Animated.View
-              layout={LinearTransition.springify()
-                .mass(0.4)
-                .damping(20)
-                .stiffness(150)}
-              className="flex-row-reverse  items-center  gap-1 mt-1"
-            >
-              {/* Minimized Streak Badge */}
+            {/* Category Badge */}
+            {habit.category && (
               <View
-                className={`px-2 py-1 rounded-full flex-row  items-center gap-1 ${
-                  completedForAnimation
-                    ? "bg-slate-700/50"
-                    : habit.streak >= 7
-                      ? "bg-amber-900/30"
-                      : habit.streak >= 3
-                        ? "bg-blue-900/30"
-                        : "bg-slate-700/50"
-                }`}
+                className="ml-2 px-2 py-1 rounded-full"
+                style={{ backgroundColor: habit.category.hexColor }}
               >
-                {/* Small achievement icon */}
-                {habit.streak >= 7 && (
-                  <Text className="text-amber-400/70 text-[10px]">✦</Text>
-                )}
-                {habit.streak >= 3 && habit.streak < 7 && (
-                  <Text className="text-blue-400/70 text-[10px]">◆</Text>
-                )}
-                {/* Compact streak number */}
-                <Text
-                  className={`text-xs  font-ibm-plex-arabic-medium ${
-                    completedForAnimation
-                      ? "text-text-disabled/60"
-                      : habit.streak >= 7
-                        ? "text-border-highlight"
-                        : habit.streak >= 3
-                          ? "text-blue-300/70"
-                          : "text-text-white/60"
-                  }`}
-                >
-                  {habit.streak}
+                <Text className="text-xs text-white font-ibm-plex-arabic">
+                  {habit.category.text}
                 </Text>
               </View>
-            </Animated.View>
-          )}
-        </Animated.View>
+            )}
+          </View>
+        </AnimatedPressable>
 
         {/* Simple Arrow with subtle animation */}
         <Animated.View
@@ -606,7 +590,7 @@ const HabitItem: React.FC<{
             className="ml-2"
           />
         </Animated.View>
-      </AnimatedPressable>
+      </Animated.View>
     </Animated.View>
   );
 });

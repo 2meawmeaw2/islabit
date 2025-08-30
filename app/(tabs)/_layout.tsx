@@ -7,12 +7,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabsLayout() {
   const height = Platform.select({ ios: 78, android: 64, default: 72 });
-  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   // Hide the tab bar when on the addNewHabit screen
-  const hideTabBar =
-    pathname.includes("/addNewHabit") ||
-    pathname.includes("/home/[singlebundle]");
 
   return (
     // ✅ ensure the root behind everything is dark
@@ -23,19 +19,18 @@ export default function TabsLayout() {
         tabBarShowLabel: false,
         tabBarHideOnKeyboard: true,
 
-        tabBarStyle: hideTabBar
-          ? { display: "none" }
-          : {
-              overflow: "hidden",
-              height: height,
-              maxHeight: height + insets.bottom,
-              backgroundColor: "#00070A",
-              width: "100%",
-              borderTopLeftRadius: 25,
-              borderTopRightRadius: 25,
-              position: "absolute",
-              paddingTop: 10,
-            },
+        tabBarStyle: {
+          overflow: "hidden",
+          height: height,
+          maxHeight: height + insets.bottom,
+          backgroundColor: "#00070A",
+          width: "100%",
+          borderTopLeftRadius: 25,
+          borderTopRightRadius: 25,
+          position: "absolute",
+          paddingTop: 10,
+          paddingBottom: 30 + insets.bottom,
+        },
       }}
     >
       <Tabs.Screen

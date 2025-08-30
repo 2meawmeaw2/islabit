@@ -1,6 +1,11 @@
 import { WEEK_DAYS_AR } from "@/lib/dates";
 import { PRAYERS, COLORS as PRAYER_COLORS } from "@/lib/prayers";
-import { HabitDay, HabitProps } from "@/types/habit";
+import {
+  HabitDay,
+  HabitProps,
+  Category,
+  DEFAULT_CATEGORIES,
+} from "@/types/habit";
 import { PrayerKey } from "@/types/salat";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,6 +23,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { CategorySelector } from "../CategorySelector";
 
 const isBlank = (s?: string) => !s || !s.trim();
 
@@ -36,6 +42,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
   const [selectedDays, setSelectedDays] = useState<HabitDay[]>([0]);
   const [salat, setSalat] = useState<PrayerKey[]>(["fajr"]);
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [category, setCategory] = useState<Category>(DEFAULT_CATEGORIES[0]); // Default to first category
 
   // Live preview props (kept separate so we don't mutate the final object by mistake)
 
@@ -68,6 +75,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
       relatedDays: [...selectedDays].sort((a, b) => a - b),
       relatedSalat: [...salat],
       priority,
+      category, // Add the selected category
     };
 
     try {
@@ -250,6 +258,15 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
             );
           })}
         </View>
+      </View>
+
+      {/* Category selector */}
+      <View style={styles.section}>
+        <CategorySelector
+          selectedCategory={category}
+          onCategoryChange={setCategory}
+          title="فئة العادة"
+        />
       </View>
 
       {/* Days selector */}

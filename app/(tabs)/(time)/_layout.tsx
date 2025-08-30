@@ -13,23 +13,16 @@ export default function TabsLayout() {
         options={{
           title: "الكل",
           headerShown: false,
-          animation: "slide_from_right",
+          animation: "ios_from_right",
         }}
       />
-      <Stack.Screen
-        name="day"
-        options={{
-          headerShown: false,
-          title: "اليوم",
-          animation: "slide_from_right",
-        }}
-      />
+
       <Stack.Screen
         name="addNewHabit"
         options={{
           headerShown: false,
           title: "إضافة عادة",
-          animation: "slide_from_left",
+          animation: "ios_from_left",
           contentStyle: { backgroundColor: "#000000" },
         }}
       />
@@ -39,7 +32,7 @@ export default function TabsLayout() {
         options={{
           headerShown: false,
           title: "تفاصيل العادة",
-          animation: "slide_from_right",
+          animation: "ios_from_right",
         }}
       />
     </Stack>
