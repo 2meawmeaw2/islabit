@@ -23,12 +23,11 @@ import Animated, {
 
 type Mode = "signIn" | "signUp";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAuth, getErrorMessage } from "@/lib/auth";
+import { router } from "expo-router";
+import { AuthGuard } from "@/components/AuthGuard";
 
 const HERO_HEIGHT = 220;
-// Replace with your own image (local or remote)
-
-// Or: const heroImage = require("@/assets/images/auth-hero.png");
-
 const AuthScreen = () => {
   const [mode, setMode] = useState<Mode>("signUp");
   const [fullName, setFullName] = useState("");
@@ -40,6 +39,8 @@ const AuthScreen = () => {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(true);
   const [showCPassword, setShowCPassword] = useState(true);
+
+  const { signIn, signUp, signInWithGoogle } = useAuth();
 
   const checkPasswordStrength = (pwd: string) => {
     let strength = 0;
@@ -134,14 +135,38 @@ const AuthScreen = () => {
     if (!ok) return;
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
       if (mode === "signIn") {
-        Alert.alert("مرحباً", "تم تسجيل الدخول بنجاح");
+        const { error } = await signIn(email, password);
+        if (error) {
+          Alert.alert("خطأ", getErrorMessage(error));
+        } else {
+          // Success - user will be redirected automatically by auth state change
+        }
       } else {
-        Alert.alert("نجح", "قم بتأكيد انشاء الحساب في البريد الالكتروني");
+        const { error } = await signUp(email, password, fullName);
+        if (error) {
+          Alert.alert("خطأ", getErrorMessage(error));
+        } else {
+          // Show success message and navigate to email confirmation
+          Alert.alert(
+            "تم إنشاء الحساب",
+            "تم إنشاء حسابك بنجاح! يرجى التحقق من بريدك الإلكتروني لتأكيد الحساب.",
+            [
+              {
+                text: "حسناً",
+                onPress: () => router.push("/email-confirmation" as any),
+              },
+            ]
+          );
+        }
       }
-    }, 2000);
+    } catch (error) {
+      Alert.alert("خطأ", "حدث خطأ غير متوقع");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const switchMode = (next: Mode) => {
@@ -178,399 +203,453 @@ const AuthScreen = () => {
   const labelKey = `${isLoading ? "loading" : "idle"}-${isSignIn ? "signin" : "signup"}`;
 
   return (
-    <SafeAreaView className="bg-bg flex-1">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
-        <Animated.ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingBottom: 24, // no vertical centering; let hero sit at the top
-          }}
-          showsVerticalScrollIndicator={false}
+    <AuthGuard requireAuth={false}>
+      <SafeAreaView className="bg-bg flex-1">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
         >
-          {/* ======= HERO / BG IMAGE ======= */}
-          <View className="w-full bg-bg">
-            <View
-              style={{ height: HERO_HEIGHT }}
-              className="w-full overflow-hidden items-center justify-center px-6"
-            >
-              {/* gradient overlay */}
-              <LinearGradient
-                colors={["#00070A", "#00AEEF"]} // bottom → top
-                start={{ x: 0.5, y: 1.2 }}
-                end={{ x: 0.5, y: -1 }}
-                className="absolute inset-0 -bottom-6 left-0 "
-              />
-
-              {/* Content Container */}
-              <Animated.View
-                entering={FadeIn.delay(100).duration(800)}
-                className="items-center justify-center flex-1 gap-4"
-              >
-                {/* App Logo */}
-                <Animated.View
-                  entering={FadeIn.delay(200).duration(800)}
-                  className="items-center"
-                >
-                  <Image
-                    source={require("@/assets/images/logo.png")}
-                    className="w-20 h-20"
-                    resizeMode="contain"
-                    style={{
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                    }}
-                  />
-                </Animated.View>
-
-                {/* Headings */}
-                {isSignIn ? (
-                  <Animated.Text
-                    key={"hi"}
-                    entering={FadeIn}
-                    exiting={FadeOut}
-                    className="font-ibm-plex-arabic-bold text-3xl text-text-brand text-center "
-                  >
-                    مرحبًا بعودتك
-                  </Animated.Text>
-                ) : (
-                  <Animated.Text
-                    key={"join"}
-                    entering={FadeIn}
-                    exiting={FadeOut}
-                    className="font-ibm-plex-arabic-bold text-3xl text-text-brand text-center "
-                  >
-                    انظم إلينا
-                  </Animated.Text>
-                )}
-                {isSignIn ? (
-                  <Animated.Text
-                    key={"hi again"}
-                    entering={FadeIn}
-                    exiting={FadeOut}
-                    className="font-ibm-plex-arabic-light text-text-secondary text-center text-md "
-                  >
-                    سُررنا رجوعك، تابع رحلتك
-                  </Animated.Text>
-                ) : (
-                  <Animated.Text
-                    key={"start"}
-                    entering={FadeIn}
-                    exiting={FadeOut}
-                    className="font-ibm-plex-arabic-light text-text-secondary text-center text-md "
-                  >
-                    ابدأ رحلتك في طلب العلم اليوم
-                  </Animated.Text>
-                )}
-              </Animated.View>
-            </View>
-          </View>
-
-          {/* ======= FORM CARD ======= */}
-          <Animated.View
-            className="px-6 -mt-6 bg-bg pt-5 rounded-3xl " // small overlap onto the hero
-            layout={Layout.springify().damping(15)}
+          <Animated.ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingBottom: 24, // no vertical centering; let hero sit at the top
+            }}
+            showsVerticalScrollIndicator={false}
           >
-            {/* Tabs */}
-            <View
-              className="flex-row-reverse bg-fore border border-border-secondary rounded-xl p-1 mb-4 relative"
-              onLayout={(e) => {
-                const w = e.nativeEvent.layout.width;
-                segmentW.value = Math.max(0, (w - 8) / 2);
-              }}
-            >
-              <Animated.View
-                pointerEvents="none"
-                className="absolute top-1 bottom-1 left-1 rounded-lg bg-text-brand"
-                style={pillStyle}
-              />
-              <TouchableOpacity
-                onPress={() => switchMode("signUp")}
-                className="flex-1 py-2 rounded-lg items-center justify-center z-10"
+            {/* ======= HERO / BG IMAGE ======= */}
+            <View className="w-full bg-bg">
+              <View
+                style={{ height: HERO_HEIGHT }}
+                className="w-full overflow-hidden items-center justify-center px-6"
               >
-                <Text
-                  className={`font-ibm-plex-arabic-medium text-sm ${
-                    !isSignIn ? "text-text-primary" : "text-text-disabled"
-                  }`}
+                {/* gradient overlay */}
+                <LinearGradient
+                  colors={["#00070A", "#00AEEF"]} // bottom → top
+                  start={{ x: 0.5, y: 1.2 }}
+                  end={{ x: 0.5, y: -1 }}
+                  className="absolute inset-0 -bottom-6 left-0 "
+                />
+
+                {/* Content Container */}
+                <Animated.View
+                  entering={FadeIn.delay(100).duration(800)}
+                  className="items-center justify-center flex-1 gap-4"
                 >
-                  إنشاء حساب
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => switchMode("signIn")}
-                className="flex-1 py-2 rounded-lg items-center justify-center z-10"
-              >
-                <Text
-                  className={`font-ibm-plex-arabic-medium text-sm ${
-                    !isSignIn ? "text-text-disabled" : "text-text-primary"
-                  }`}
-                >
-                  تسجيل الدخول
-                </Text>
-              </TouchableOpacity>
+                  {/* App Logo */}
+                  <Animated.View
+                    entering={FadeIn.delay(200).duration(800)}
+                    className="items-center"
+                  >
+                    <Image
+                      source={require("@/assets/images/logo.png")}
+                      className="w-20 h-20"
+                      resizeMode="contain"
+                      style={{
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 8,
+                      }}
+                    />
+                  </Animated.View>
+
+                  {/* Headings */}
+                  {isSignIn ? (
+                    <Animated.Text
+                      key={"hi"}
+                      entering={FadeIn}
+                      exiting={FadeOut}
+                      className="font-ibm-plex-arabic-bold text-3xl text-text-brand text-center "
+                    >
+                      مرحبًا بعودتك
+                    </Animated.Text>
+                  ) : (
+                    <Animated.Text
+                      key={"join"}
+                      entering={FadeIn}
+                      exiting={FadeOut}
+                      className="font-ibm-plex-arabic-bold text-3xl text-text-brand text-center "
+                    >
+                      انظم إلينا
+                    </Animated.Text>
+                  )}
+                  {isSignIn ? (
+                    <Animated.Text
+                      key={"hi again"}
+                      entering={FadeIn}
+                      exiting={FadeOut}
+                      className="font-ibm-plex-arabic-light text-text-secondary text-center text-md "
+                    >
+                      سُررنا رجوعك، تابع رحلتك
+                    </Animated.Text>
+                  ) : (
+                    <Animated.Text
+                      key={"start"}
+                      entering={FadeIn}
+                      exiting={FadeOut}
+                      className="font-ibm-plex-arabic-light text-text-secondary text-center text-md "
+                    >
+                      ابدأ رحلتك في طلب العلم اليوم
+                    </Animated.Text>
+                  )}
+                </Animated.View>
+              </View>
             </View>
 
-            {/* ===== existing form stays the same from here down ===== */}
-            <Animated.View layout={Layout.springify().damping(15)}>
+            {/* ======= FORM CARD ======= */}
+            <Animated.View
+              className="px-6 -mt-6 bg-bg pt-5 rounded-3xl " // small overlap onto the hero
+              layout={Layout.springify().damping(15)}
+            >
+              {/* Tabs */}
+              <View
+                className="flex-row-reverse bg-fore border border-border-secondary rounded-xl p-1 mb-4 relative"
+                onLayout={(e) => {
+                  const w = e.nativeEvent.layout.width;
+                  segmentW.value = Math.max(0, (w - 8) / 2);
+                }}
+              >
+                <Animated.View
+                  pointerEvents="none"
+                  className="absolute top-1 bottom-1 left-1 rounded-lg bg-text-brand"
+                  style={pillStyle}
+                />
+                <TouchableOpacity
+                  onPress={() => switchMode("signUp")}
+                  className="flex-1 py-2 rounded-lg items-center justify-center z-10"
+                >
+                  <Text
+                    className={`font-ibm-plex-arabic-medium text-sm ${
+                      !isSignIn ? "text-text-primary" : "text-text-disabled"
+                    }`}
+                  >
+                    إنشاء حساب
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => switchMode("signIn")}
+                  className="flex-1 py-2 rounded-lg items-center justify-center z-10"
+                >
+                  <Text
+                    className={`font-ibm-plex-arabic-medium text-sm ${
+                      !isSignIn ? "text-text-disabled" : "text-text-primary"
+                    }`}
+                  >
+                    تسجيل الدخول
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* ===== existing form stays the same from here down ===== */}
               <Animated.View layout={Layout.springify().damping(15)}>
-                {!isSignIn && (
+                <Animated.View layout={Layout.springify().damping(15)}>
+                  {!isSignIn && (
+                    <Animated.View
+                      entering={FadeIn}
+                      exiting={FadeOut}
+                      layout={Layout.springify().damping(15)}
+                      className="mb-3"
+                    >
+                      <Text className="font-ibm-plex-arabic text-text-primary mb-1 text-right text-sm">
+                        الاسم الكامل
+                      </Text>
+                      <View className="relative">
+                        <TextInput
+                          value={fullName}
+                          onChangeText={setFullName}
+                          className="bg-fore border border-border-secondary rounded-lg px-4 py-3 text-text-primary font-ibm-plex-arabic text-right"
+                          autoCapitalize="words"
+                          textAlign="right"
+                        />
+                        {fullName.length === 0 && (
+                          <Text className="absolute right-4 top-1/2 -translate-y-[50%] text-text-secondary font-ibm-plex-arabic-extralight">
+                            أدخل اسمك الكامل
+                          </Text>
+                        )}
+                      </View>
+                    </Animated.View>
+                  )}
+
+                  {/* Email */}
                   <Animated.View
-                    entering={FadeIn}
-                    exiting={FadeOut}
                     layout={Layout.springify().damping(15)}
                     className="mb-3"
                   >
                     <Text className="font-ibm-plex-arabic text-text-primary mb-1 text-right text-sm">
-                      الاسم الكامل
+                      البريد الإلكتروني
                     </Text>
                     <View className="relative">
                       <TextInput
-                        value={fullName}
-                        onChangeText={setFullName}
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholderTextColor="#F5F5F5"
                         className="bg-fore border border-border-secondary rounded-lg px-4 py-3 text-text-primary font-ibm-plex-arabic text-right"
-                        autoCapitalize="words"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
                         textAlign="right"
                       />
-                      {fullName.length === 0 && (
+                      {email.length === 0 && (
                         <Text className="absolute right-4 top-1/2 -translate-y-[50%] text-text-secondary font-ibm-plex-arabic-extralight">
-                          أدخل اسمك الكامل
+                          أدخل بريدك الإلكتروني
                         </Text>
                       )}
                     </View>
                   </Animated.View>
-                )}
 
-                {/* Email */}
-                <Animated.View
-                  layout={Layout.springify().damping(15)}
-                  className="mb-3"
-                >
-                  <Text className="font-ibm-plex-arabic text-text-primary mb-1 text-right text-sm">
-                    البريد الإلكتروني
-                  </Text>
-                  <View className="relative">
-                    <TextInput
-                      value={email}
-                      onChangeText={setEmail}
-                      placeholderTextColor="#F5F5F5"
-                      className="bg-fore border border-border-secondary rounded-lg px-4 py-3 text-text-primary font-ibm-plex-arabic text-right"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      textAlign="right"
-                    />
-                    {email.length === 0 && (
-                      <Text className="absolute right-4 top-1/2 -translate-y-[50%] text-text-secondary font-ibm-plex-arabic-extralight">
-                        أدخل بريدك الإلكتروني
-                      </Text>
-                    )}
-                  </View>
-                </Animated.View>
-
-                {/* Password */}
-                <Animated.View
-                  layout={Layout.springify().damping(15)}
-                  className="mb-2"
-                >
-                  <Text className="font-ibm-plex-arabic-medium text-text-primary mb-1 text-right text-sm">
-                    كلمة المرور
-                  </Text>
-                  <View className="flex-row items-center bg-fore border border-border-secondary rounded-lg">
-                    <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
-                      className="px-3 "
-                    >
-                      <Ionicons
-                        name={showPassword ? "eye-off" : "eye"}
-                        size={20}
-                        color="#00AEEF"
-                      />
-                    </TouchableOpacity>
-                    <TextInput
-                      value={password}
-                      onChangeText={
-                        isSignIn ? setPassword : handlePasswordChange
-                      }
-                      placeholder="أدخل كلمة المرور"
-                      placeholderTextColor="#E2E8F0"
-                      className="flex-1 px-4 py-3 text-text-primary font-ibm-plex-arabic-light text-right"
-                      secureTextEntry={!showPassword}
-                      textAlign="right"
-                    />
-                  </View>
-
-                  {!isSignIn && password.length > 0 && (
-                    <View className="flex-row justify-end items-center mt-1">
-                      <Text
-                        className="font-ibm-plex-arabic-light text-xs ml-2"
-                        style={{ color: getPasswordStrengthColor() }}
-                      >
-                        {getPasswordStrengthText()}
-                      </Text>
-                      <View className="flex-row">
-                        {[1, 2, 3, 4, 5].map((level) => (
-                          <View
-                            key={level}
-                            className="w-4 h-1 rounded mx-0.5"
-                            style={{
-                              backgroundColor:
-                                passwordStrength >= level
-                                  ? getPasswordStrengthColor()
-                                  : "#4B9AB5",
-                            }}
-                          />
-                        ))}
-                      </View>
-                    </View>
-                  )}
-                </Animated.View>
-
-                {/* Confirm Password (sign up only) */}
-                {!isSignIn && (
+                  {/* Password */}
                   <Animated.View
-                    entering={FadeIn}
-                    exiting={FadeOut}
                     layout={Layout.springify().damping(15)}
-                    className="mb-3"
+                    className="mb-2"
                   >
-                    <Text className="font-ibm-plex-arabic text-text-primary mb-1 text-right text-sm">
-                      تأكيد كلمة المرور
+                    <Text className="font-ibm-plex-arabic-medium text-text-primary mb-1 text-right text-sm">
+                      كلمة المرور
                     </Text>
-                    <View className="relative">
-                      <TextInput
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        placeholder="أعد إدخال كلمة المرور"
-                        placeholderTextColor="#F5F5F5"
-                        className={`bg-fore border rounded-lg px-4 py-3 text-text-primary font-ibm-plex-arabic-extralight text-right ${
-                          confirmPassword && password !== confirmPassword
-                            ? "border-feedback-error"
-                            : "border-border-secondary"
-                        }`}
-                        secureTextEntry={!showCPassword}
-                        textAlign="right"
-                      />
+                    <View className="flex-row items-center bg-fore border border-border-secondary rounded-lg">
                       <TouchableOpacity
-                        onPress={() => setShowCPassword((prev) => !prev)}
-                        className="absolute left-3 top-1/2 -translate-y-[50%]"
+                        onPress={() => setShowPassword(!showPassword)}
+                        className="px-3 "
                       >
                         <Ionicons
-                          name={showCPassword ? "eye-off" : "eye"}
+                          name={showPassword ? "eye-off" : "eye"}
                           size={20}
                           color="#00AEEF"
                         />
                       </TouchableOpacity>
+                      <TextInput
+                        value={password}
+                        onChangeText={
+                          isSignIn ? setPassword : handlePasswordChange
+                        }
+                        placeholder="أدخل كلمة المرور"
+                        placeholderTextColor="#E2E8F0"
+                        className="flex-1 px-4 py-3 text-text-primary font-ibm-plex-arabic-light text-right"
+                        secureTextEntry={!showPassword}
+                        textAlign="right"
+                      />
                     </View>
-                    {confirmPassword && password !== confirmPassword && (
-                      <Text className="font-ibm-plex-arabic-light text-feedback-error text-xs mt-1 text-right">
-                        كلمات المرور غير متطابقة
-                      </Text>
+
+                    {!isSignIn && password.length > 0 && (
+                      <View className="flex-row justify-end items-center mt-1">
+                        <Text
+                          className="font-ibm-plex-arabic-light text-xs ml-2"
+                          style={{ color: getPasswordStrengthColor() }}
+                        >
+                          {getPasswordStrengthText()}
+                        </Text>
+                        <View className="flex-row">
+                          {[1, 2, 3, 4, 5].map((level) => (
+                            <View
+                              key={level}
+                              className="w-4 h-1 rounded mx-0.5"
+                              style={{
+                                backgroundColor:
+                                  passwordStrength >= level
+                                    ? getPasswordStrengthColor()
+                                    : "#4B9AB5",
+                              }}
+                            />
+                          ))}
+                        </View>
+                      </View>
                     )}
                   </Animated.View>
-                )}
 
-                <Animated.View layout={Layout.springify().damping(15)}>
-                  <TouchableOpacity
-                    onPress={handleSubmit}
-                    disabled={isLoading || (!isSignIn && !acceptTerms)}
-                    className={`bg-text-brand rounded-lg py-3 mb-4 ${
-                      isLoading || (!isSignIn && !acceptTerms)
-                        ? "opacity-50"
-                        : ""
-                    }`}
-                  >
-                    <Animated.Text
-                      key={labelKey}
-                      entering={FadeIn.duration(150)}
-                      exiting={FadeOut.duration(100)}
-                      className="font-ibm-plex-arabic-bold text-text-primary text-center"
-                    >
-                      {label}
-                    </Animated.Text>
-                  </TouchableOpacity>
-
-                  {isSignIn && (
+                  {/* Confirm Password (sign up only) */}
+                  {!isSignIn && (
                     <Animated.View
-                      entering={FadeIn.duration(100)}
-                      exiting={FadeOut.duration(100)}
+                      entering={FadeIn}
+                      exiting={FadeOut}
+                      layout={Layout.springify().damping(15)}
+                      className="mb-3"
                     >
-                      <TouchableOpacity className="mb-4 self-end">
-                        <Text className="font-ibm-plex-arabic-medium text-text-brand text-sm">
-                          نسيت كلمة المرور؟
+                      <Text className="font-ibm-plex-arabic text-text-primary mb-1 text-right text-sm">
+                        تأكيد كلمة المرور
+                      </Text>
+                      <View className="relative">
+                        <TextInput
+                          value={confirmPassword}
+                          onChangeText={setConfirmPassword}
+                          placeholder="أعد إدخال كلمة المرور"
+                          placeholderTextColor="#F5F5F5"
+                          className={`bg-fore border rounded-lg px-4 py-3 text-text-primary font-ibm-plex-arabic-extralight text-right ${
+                            confirmPassword && password !== confirmPassword
+                              ? "border-feedback-error"
+                              : "border-border-secondary"
+                          }`}
+                          secureTextEntry={!showCPassword}
+                          textAlign="right"
+                        />
+                        <TouchableOpacity
+                          onPress={() => setShowCPassword((prev) => !prev)}
+                          className="absolute left-3 top-1/2 -translate-y-[50%]"
+                        >
+                          <Ionicons
+                            name={showCPassword ? "eye-off" : "eye"}
+                            size={20}
+                            color="#00AEEF"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                      {confirmPassword && password !== confirmPassword && (
+                        <Text className="font-ibm-plex-arabic-light text-feedback-error text-xs mt-1 text-right">
+                          كلمات المرور غير متطابقة
+                        </Text>
+                      )}
+                    </Animated.View>
+                  )}
+
+                  {/* Terms and Conditions Checkbox (sign up only) */}
+                  {!isSignIn && (
+                    <Animated.View
+                      entering={FadeIn}
+                      exiting={FadeOut}
+                      layout={Layout.springify().damping(15)}
+                      className="mb-4"
+                    >
+                      <TouchableOpacity
+                        onPress={() => setAcceptTerms(!acceptTerms)}
+                        className="flex-row items-center"
+                      >
+                        <View
+                          className={`w-5 h-5 border-2 rounded mr-3 items-center justify-center ${
+                            acceptTerms
+                              ? "bg-text-brand border-text-brand"
+                              : "border-border-secondary"
+                          }`}
+                        >
+                          {acceptTerms && (
+                            <Ionicons
+                              name="checkmark"
+                              size={14}
+                              color="#00070A"
+                            />
+                          )}
+                        </View>
+                        <Text className="font-ibm-plex-arabic text-text-primary text-sm flex-1">
+                          أوافق على{" "}
+                          <Text className="text-text-brand font-ibm-plex-arabic-medium">
+                            الشروط والأحكام
+                          </Text>{" "}
+                          و{" "}
+                          <Text className="text-text-brand font-ibm-plex-arabic-medium">
+                            سياسة الخصوصية
+                          </Text>
                         </Text>
                       </TouchableOpacity>
                     </Animated.View>
                   )}
+
                   <Animated.View layout={Layout.springify().damping(15)}>
-                    <View className="bg-text-primary border-r-4 border-text-brand rounded-xl p-3 mb-4">
-                      <Text className="font-ibm-plex-arabic text-bg text-center text-sm leading-5">
-                        "إِنَّمَا يَخْشَى اللَّهَ مِنْ عِبَادِهِ الْعُلَمَاءُ"
-                      </Text>
-                      <Text className="font-ibm-plex-arabic-light text-bg text-center text-xs mt-1">
-                        سورة فاطر - آية ٢٨
-                      </Text>
-                    </View>
-                  </Animated.View>
-                  <Animated.View layout={Layout.springify().damping(15)}>
-                    <View className="flex-row items-center my-4">
-                      <View className="flex-1 h-px bg-border-primary" />
-                      <Text className="font-ibm-plex-arabic text-text-disabled px-3 text-sm">
-                        أو
-                      </Text>
-                      <View className="flex-1 h-px bg-border-primary" />
-                    </View>
-                    <TouchableOpacity className="bg-fore border-[1px] border-border-active rounded-lg py-2.5 mb-4 gap-3 flex-row-reverse items-center justify-center">
-                      {isSignIn ? (
-                        <Animated.Text
-                          entering={FadeIn}
-                          exiting={FadeOut}
-                          className="font-ibm-plex-arabic text-text-primary text-sm"
-                        >
-                          إنشاء حساب باستخدام
-                        </Animated.Text>
-                      ) : (
-                        <Animated.Text
-                          entering={FadeIn}
-                          exiting={FadeOut}
-                          className="font-ibm-plex-arabic text-text-primary text-sm"
-                        >
-                          تسجيل الدخول باستخدام
-                        </Animated.Text>
-                      )}
-                      <Image
-                        source={require("@/assets/icons/google.png")}
-                        className="w-6 h-6"
-                        resizeMode="contain"
-                      />
+                    <TouchableOpacity
+                      onPress={handleSubmit}
+                      disabled={isLoading || (!isSignIn && !acceptTerms)}
+                      className={`bg-text-brand rounded-lg py-3 mb-4 ${
+                        isLoading || (!isSignIn && !acceptTerms)
+                          ? "opacity-50"
+                          : ""
+                      }`}
+                    >
+                      <Animated.Text
+                        key={labelKey}
+                        entering={FadeIn.duration(150)}
+                        exiting={FadeOut.duration(100)}
+                        className="font-ibm-plex-arabic-bold text-text-primary text-center"
+                      >
+                        {label}
+                      </Animated.Text>
                     </TouchableOpacity>
 
-                    <View className="flex-row justify-center mb-3 my-2">
-                      <TouchableOpacity
-                        onPress={() =>
-                          switchMode(isSignIn ? "signUp" : "signIn")
-                        }
+                    {isSignIn && (
+                      <Animated.View
+                        entering={FadeIn.duration(100)}
+                        exiting={FadeOut.duration(100)}
                       >
-                        <Text className="font-ibm-plex-arabic-medium text-text-brand text-sm">
-                          {isSignIn ? "إنشاء حساب" : "تسجيل الدخول"}
+                        <TouchableOpacity
+                          onPress={() => router.push("/forgot-password" as any)}
+                          className="mb-4 self-end"
+                        >
+                          <Text className="font-ibm-plex-arabic-medium text-text-brand text-sm">
+                            نسيت كلمة المرور؟
+                          </Text>
+                        </TouchableOpacity>
+                      </Animated.View>
+                    )}
+                    <Animated.View layout={Layout.springify().damping(15)}>
+                      <View className="bg-text-primary border-r-4 border-text-brand rounded-xl p-3 mb-4">
+                        <Text className="font-ibm-plex-arabic text-bg text-center text-sm leading-5">
+                          "إِنَّمَا يَخْشَى اللَّهَ مِنْ عِبَادِهِ الْعُلَمَاءُ"
                         </Text>
+                        <Text className="font-ibm-plex-arabic-light text-bg text-center text-xs mt-1">
+                          سورة فاطر - آية ٢٨
+                        </Text>
+                      </View>
+                    </Animated.View>
+                    <Animated.View layout={Layout.springify().damping(15)}>
+                      <View className="flex-row items-center my-4">
+                        <View className="flex-1 h-px bg-border-primary" />
+                        <Text className="font-ibm-plex-arabic text-text-disabled px-3 text-sm">
+                          أو
+                        </Text>
+                        <View className="flex-1 h-px bg-border-primary" />
+                      </View>
+                      <TouchableOpacity
+                        onPress={async () => {
+                          setIsLoading(true);
+                          try {
+                            const { error } = await signInWithGoogle();
+                            if (error) {
+                              Alert.alert("خطأ", getErrorMessage(error));
+                            }
+                          } catch (error) {
+                            Alert.alert(
+                              "خطأ",
+                              "حدث خطأ في تسجيل الدخول بـ Google"
+                            );
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }}
+                        disabled={isLoading}
+                        className={`bg-fore border-[1px] border-border-active rounded-lg py-2.5 mb-4 gap-3 flex-row-reverse items-center justify-center ${
+                          isLoading ? "opacity-50" : ""
+                        }`}
+                      >
+                        <Text className="font-ibm-plex-arabic text-text-primary text-sm">
+                          {isSignIn ? "تسجيل الدخول" : "إنشاء حساب"} باستخدام
+                          Google
+                        </Text>
+                        <Image
+                          source={require("@/assets/icons/google.png")}
+                          className="w-6 h-6"
+                          resizeMode="contain"
+                        />
                       </TouchableOpacity>
-                      <Text className="font-ibm-plex-arabic text-text-secondary mx-2 text-sm">
-                        {isSignIn ? "ليس لديك حساب؟" : "لديك حساب بالفعل؟"}
-                      </Text>
-                    </View>
+
+                      <View className="flex-row justify-center mb-3 my-2">
+                        <TouchableOpacity
+                          onPress={() =>
+                            switchMode(isSignIn ? "signUp" : "signIn")
+                          }
+                        >
+                          <Text className="font-ibm-plex-arabic-medium text-text-brand text-sm">
+                            {isSignIn ? "إنشاء حساب" : "تسجيل الدخول"}
+                          </Text>
+                        </TouchableOpacity>
+                        <Text className="font-ibm-plex-arabic text-text-secondary mx-2 text-sm">
+                          {isSignIn ? "ليس لديك حساب؟" : "لديك حساب بالفعل؟"}
+                        </Text>
+                      </View>
+                    </Animated.View>
                   </Animated.View>
                 </Animated.View>
               </Animated.View>
+              {isSignIn ? <View className="w-full h-[120px]" /> : null}
             </Animated.View>
-            {isSignIn ? <View className="w-full h-[120px]" /> : null}
-          </Animated.View>
-        </Animated.ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </Animated.ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </AuthGuard>
   );
 };
 

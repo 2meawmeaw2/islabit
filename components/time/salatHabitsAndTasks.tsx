@@ -7,12 +7,12 @@ import { ActionCard } from "./habitCard"; // <- adjust the path if needed
 import { Ionicons } from "@expo/vector-icons";
 import PercentageCircle from "../PercentageCircle";
 import AnimatedHeader from "./AnimatedHeader";
-import { Habit } from "@/types";
+import { HabitProps } from "@/types/habit";
 
 type Props = {
   /** Small section label, e.g. "فجر" | "ظهر" | "عصر" | "مغرب" | "عشاء" */
   label: string;
-  habits: Habit[];
+  habits: HabitProps[];
 
   /** Callbacks (receive the habit id) */
   onToggleHabit?: (id: number, next: boolean) => void;
@@ -80,9 +80,9 @@ export const PrayerHabitsSection: React.FC<Props> = memo(
                     title={h.title}
                     streak={h.streak ?? 0}
                     completed={!!h.completed}
-                    onToggle={(next) => onToggleHabit?.(h.id, next)}
-                    onMore={() => onMoreHabit?.(h.id)}
-                    onPress={() => onPressHabit?.(h.id)}
+                    onToggle={(next) => onToggleHabit?.(parseInt(h.id), next)}
+                    onMore={() => onMoreHabit?.(parseInt(h.id))}
+                    onPress={() => onPressHabit?.(parseInt(h.id))}
                   />
                 </Animated.View>
               ))}

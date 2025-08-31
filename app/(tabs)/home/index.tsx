@@ -1,19 +1,19 @@
 import HabitBundlesSection from "@/components/habits/HabitBundlesSection";
-import HabitTypesSection from "@/components/habits/HabitTypesSection";
+import TrendingSection from "@/components/habits/TrendingSection";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import {
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import HabitTypesSection from "@/components/habits/HabitTypesSection";
+import { useHomeData } from "@/lib/use-home-data";
 
 const AllHabits = () => {
+  // Use centralized data fetching hook
+  const { bundles, trendingHabits, isLoading, error, refetch } = useHomeData();
+  console.log("trendingHabits", trendingHabits);
+  console.log("bundles", bundles);
   const handleHabitTypePress = (typeId: string) => {
     // Navigate to explore habits page with category filter
     router.push({
@@ -23,64 +23,52 @@ const AllHabits = () => {
   };
 
   const handleBundlePress = (bundleId: string) => {
-    // Navigate to single bundle page
-    // path: app/(tabs)/home/[singlebundle].tsx
-    // we pass id as param "id"
-    // using router from expo-router is not present here, keep simple via Link-less imperative using a lazy import to avoid refactor
-    // To keep minimal changes, let's use a dynamic import of router
-    const { router } = require("expo-router");
+    // Find the bundle data
+    const bundle = bundles.find((b) => b.id === bundleId);
+    if (bundle) {
+      // Navigate to single bundle page with bundle data
+      router.push({
+        pathname: "/home/[singlebundle]",
+        params: { singlebundle: bundleId, bundleData: JSON.stringify(bundle) },
+      });
+    }
+  };
+
+  const handleTrendingHabitPress = (habitId: string) => {
+    // Navigate to habit details or add to user's habits
     router.push({
-      pathname: "/home/[singlebundle]",
-      params: { id: String(bundleId) },
+      pathname: "/home/explore-habits",
+      params: { habitId: String(habitId) },
     });
+  };
+
+  const handleTrendingBundlePress = (bundleId: string) => {
+    // Find the bundle data
+    const bundle = bundles.find((b) => b.id === bundleId);
+    if (bundle) {
+      // Navigate to single bundle page with bundle data
+      router.push({
+        pathname: "/home/[singlebundle]",
+        params: { singlebundle: bundleId, bundleData: JSON.stringify(bundle) },
+      });
+    }
   };
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <StatusBar barStyle="light-content" />
+      <StatusBar style="light" />
+
+      {/* Header */}
       <View className="flex-row-reverse items-center justify-between px-4 bg-fore h-16">
         <Text className="font-ibm-plex-arabic-semibold text-2xl text-text-brand">
           اكتشف
         </Text>
-        {/* Explore More Button */}
         <Pressable
-          onPress={() => {
-            // Show options for exploring more
-            // For now, navigate to explore bundles
-            router.push("/home/explore-bundles");
-          }}
+          onPress={() => router.push("/home/explore-bundles")}
           className="flex-row-reverse items-center gap-2"
         >
           <Ionicons name="apps" size={18} color="#00AEEF" />
         </Pressable>
-      </View>
-
-      {/* Quick Explore Section */}
-      <View className="px-6 py-4 bg-white/5 mx-4 rounded-2xl mb-6">
-        <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary text-right mb-4">
-          اكتشف المزيد
-        </Text>
-        <View className="flex-row gap-3">
-          <Pressable
-            onPress={() => router.push("/home/explore-bundles")}
-            className="flex-1 bg-brand/20 border border-brand/30 rounded-xl p-4 items-center"
-          >
-            <Ionicons name="layers" size={24} color="#00AEEF" />
-            <Text className="font-ibm-plex-arabic-medium text-sm text-text-primary mt-2 text-center">
-              رحلات العادات
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => router.push("/home/explore-habits")}
-            className="flex-1 bg-white/10 border border-white/20 rounded-xl p-4 items-center"
-          >
-            <Ionicons name="star" size={24} color="#00AEEF" />
-            <Text className="font-ibm-plex-arabic-medium text-sm text-text-primary mt-2 text-center">
-              عادات فردية
-            </Text>
-          </Pressable>
-        </View>
       </View>
 
       <ScrollView
@@ -88,10 +76,24 @@ const AllHabits = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Habit Bundles - Horizontal Scroll */}
-        <HabitBundlesSection onBundlePress={handleBundlePress} />
+        {/* First HabitBundlesSection */}
+        <HabitBundlesSection
+          onBundlePress={handleBundlePress}
+          bundles={bundles}
+          isLoading={isLoading}
+          error={error}
+        />
 
-        {/* Habit Types - Vertical Scroll */}
+        {/* Trending Section - Habits and Bundles */}
+        <TrendingSection
+          onHabitPress={handleTrendingHabitPress}
+          onBundlePress={handleTrendingBundlePress}
+          trendingHabits={trendingHabits}
+          trendingBundles={bundles.slice(0, 3)}
+          isLoading={isLoading}
+          error={error}
+        />
+        {/* Second HabitBundlesSection */}
         <HabitTypesSection onHabitTypePress={handleHabitTypePress} />
       </ScrollView>
     </SafeAreaView>

@@ -1,23 +1,20 @@
-import React, { useState, useMemo, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  TextInput,
-  Image,
-} from "react-native";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { habits } from "@/lib/habits";
 import { Category, DEFAULT_CATEGORIES } from "@/types/habit";
+import { useExploreHabits } from "@/lib/use-explore-habits";
 import Animated, {
   FadeInUp,
   FadeInLeft,
   FadeInDown,
+  FadeOut,
+  FadeIn,
+  LinearTransition,
+  FadeInRight,
 } from "react-native-reanimated";
 
 const ExploreHabits = () => {
@@ -28,7 +25,10 @@ const ExploreHabits = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     initialCategory || null
   );
+  const scrollViewRef = useRef<ScrollView>(null);
 
+  // Fetch habits from Supabase
+  const { habits, isLoading, error } = useExploreHabits();
   // Filter habits based on search and category
   const filteredHabits = useMemo(() => {
     let filtered = habits;
@@ -38,151 +38,23 @@ const ExploreHabits = () => {
         (habit) =>
           habit.title.includes(searchQuery) ||
           habit.whyDescription.includes(searchQuery) ||
-          habit.benefit.some((benefit) => benefit.includes(searchQuery))
+          habit.benefit.some((benefit: string) => benefit.includes(searchQuery))
       );
     }
 
     if (selectedCategory) {
-      filtered = filtered.filter((habit) => {
-        const title = habit.title.toLowerCase();
-        const description = habit.whyDescription.toLowerCase();
-
-        // Spiritual category - habits with prayer connections
-        if (selectedCategory === "spiritual") {
-          return (
-            habit.suggestedRelatedSalat.length > 0 ||
-            title.includes("صلاة") ||
-            title.includes("قرآن") ||
-            title.includes("ذكر") ||
-            title.includes("دعاء") ||
-            title.includes("صيام") ||
-            title.includes("وضوء")
-          );
-        }
-
-        // Health category - physical and mental health habits
-        if (selectedCategory === "health") {
-          return (
-            title.includes("صحة") ||
-            title.includes("رياضة") ||
-            title.includes("نوم") ||
-            title.includes("ماء") ||
-            title.includes("تغذية") ||
-            title.includes("تمرين") ||
-            title.includes("حركة") ||
-            description.includes("صحة") ||
-            description.includes("جسم") ||
-            description.includes("طاقة")
-          );
-        }
-
-        // Educational category - learning and knowledge habits
-        if (selectedCategory === "educational") {
-          return (
-            title.includes("قراءة") ||
-            title.includes("تعلم") ||
-            title.includes("دراسة") ||
-            title.includes("كتاب") ||
-            title.includes("معلومات") ||
-            description.includes("تعلم") ||
-            description.includes("قراءة") ||
-            description.includes("معرفة")
-          );
-        }
-
-        // Social category - community and helping others
-        if (selectedCategory === "social") {
-          return (
-            title.includes("صلة") ||
-            title.includes("مساعدة") ||
-            title.includes("تواصل") ||
-            title.includes("صدقة") ||
-            title.includes("جوار") ||
-            title.includes("أخوة") ||
-            description.includes("مساعدة") ||
-            description.includes("مجتمع") ||
-            description.includes("آخرين")
-          );
-        }
-
-        // Financial category - money and wealth habits
-        if (selectedCategory === "financial") {
-          return (
-            title.includes("مال") ||
-            title.includes("توفير") ||
-            title.includes("إنفاق") ||
-            title.includes("استثمار") ||
-            title.includes("اقتصاد") ||
-            description.includes("مال") ||
-            description.includes("توفير") ||
-            description.includes("اقتصاد")
-          );
-        }
-
-        // Family category - family and relationship habits
-        if (selectedCategory === "family") {
-          return (
-            title.includes("أرحام") ||
-            title.includes("عائلة") ||
-            title.includes("أولاد") ||
-            title.includes("زوج") ||
-            title.includes("والدين") ||
-            description.includes("عائلة") ||
-            description.includes("أرحام") ||
-            description.includes("علاقات")
-          );
-        }
-
-        // Work category - professional and career habits
-        if (selectedCategory === "work") {
-          return (
-            title.includes("عمل") ||
-            title.includes("مهنة") ||
-            title.includes("وظيفة") ||
-            title.includes("مشروع") ||
-            title.includes("تطوير") ||
-            description.includes("عمل") ||
-            description.includes("مهنة") ||
-            description.includes("وظيفة")
-          );
-        }
-
-        // Sports category - physical activities and sports
-        if (selectedCategory === "sports") {
-          return (
-            title.includes("رياضة") ||
-            title.includes("تمرين") ||
-            title.includes("حركة") ||
-            title.includes("جري") ||
-            title.includes("سباحة") ||
-            title.includes("كرة") ||
-            description.includes("رياضة") ||
-            description.includes("تمرين") ||
-            description.includes("حركة")
-          );
-        }
-
-        // If no category matches, don't show the habit
-        return false;
-      });
-
-      // Debug logging
-      console.log(`Filtering by category: ${selectedCategory}`);
-      console.log(`Total habits: ${habits.length}`);
-      console.log(`Filtered habits: ${filtered.length}`);
-      console.log(
-        `Filtered habit titles:`,
-        filtered.map((h) => h.title)
+      filtered = filtered.filter((habit) =>
+        habit.categories.some((cat) => cat.text === selectedCategory)
       );
     }
 
     return filtered;
-  }, [searchQuery, selectedCategory]);
+  }, [habits, searchQuery, selectedCategory]);
 
-  const handleHabitPress = (habitId: number) => {
+  const handleHabitPress = (habitId: string) => {
     router.push({
       pathname: "/(tabs)/home/(habit)/[id]",
-      params: { id: String(habitId) },
+      params: { id: habitId },
     });
   };
 
@@ -190,120 +62,14 @@ const ExploreHabits = () => {
     router.navigate("/home");
   };
 
-  const getHabitCategory = (habit: any): Category => {
-    // Determine habit category based on content and related salat
-    if (habit.suggestedRelatedSalat.length > 0) {
-      return DEFAULT_CATEGORIES[0]; // Spiritual
-    }
-
-    // Analyze habit title and description for better categorization
-    const title = habit.title.toLowerCase();
-    const description = habit.whyDescription.toLowerCase();
-
-    // Health category - physical and mental health habits
-    if (
-      title.includes("صحة") ||
-      title.includes("رياضة") ||
-      title.includes("نوم") ||
-      title.includes("ماء") ||
-      title.includes("تغذية") ||
-      title.includes("تمرين") ||
-      title.includes("حركة") ||
-      description.includes("صحة") ||
-      description.includes("جسم") ||
-      description.includes("طاقة")
-    ) {
-      return DEFAULT_CATEGORIES[1]; // Health
-    }
-
-    // Educational category - learning and knowledge habits
-    if (
-      title.includes("قراءة") ||
-      title.includes("تعلم") ||
-      title.includes("دراسة") ||
-      title.includes("كتاب") ||
-      title.includes("معلومات") ||
-      description.includes("تعلم") ||
-      description.includes("قراءة") ||
-      description.includes("معرفة")
-    ) {
-      return DEFAULT_CATEGORIES[2]; // Educational
-    }
-
-    // Social category - community and helping others
-    if (
-      title.includes("صلة") ||
-      title.includes("مساعدة") ||
-      title.includes("تواصل") ||
-      title.includes("صدقة") ||
-      title.includes("جوار") ||
-      title.includes("أخوة") ||
-      description.includes("مساعدة") ||
-      description.includes("مجتمع") ||
-      description.includes("آخرين")
-    ) {
-      return DEFAULT_CATEGORIES[3]; // Social
-    }
-
-    // Financial category - money and wealth habits
-    if (
-      title.includes("مال") ||
-      title.includes("توفير") ||
-      title.includes("إنفاق") ||
-      title.includes("استثمار") ||
-      title.includes("اقتصاد") ||
-      description.includes("مال") ||
-      description.includes("توفير") ||
-      description.includes("اقتصاد")
-    ) {
-      return DEFAULT_CATEGORIES[4]; // Financial
-    }
-
-    // Family category - family and relationship habits
-    if (
-      title.includes("أرحام") ||
-      title.includes("عائلة") ||
-      title.includes("أولاد") ||
-      title.includes("زوج") ||
-      title.includes("والدين") ||
-      description.includes("عائلة") ||
-      description.includes("أرحام") ||
-      description.includes("علاقات")
-    ) {
-      return DEFAULT_CATEGORIES[5]; // Family
-    }
-
-    // Work category - professional and career habits
-    if (
-      title.includes("عمل") ||
-      title.includes("مهنة") ||
-      title.includes("وظيفة") ||
-      title.includes("مشروع") ||
-      title.includes("تطوير") ||
-      description.includes("عمل") ||
-      description.includes("مهنة") ||
-      description.includes("وظيفة")
-    ) {
-      return DEFAULT_CATEGORIES[6]; // Work
-    }
-
-    // Sports category - physical activities and sports
-    if (
-      title.includes("رياضة") ||
-      title.includes("تمرين") ||
-      title.includes("حركة") ||
-      title.includes("جري") ||
-      title.includes("سباحة") ||
-      title.includes("كرة") ||
-      description.includes("رياضة") ||
-      description.includes("تمرين") ||
-      description.includes("حركة")
-    ) {
-      return DEFAULT_CATEGORIES[7]; // Sports
-    }
-
-    // Default to spiritual for Islamic habits
-    return DEFAULT_CATEGORIES[0];
+  const getHabitCategories = (habit: any): Category[] => {
+    // Get all categories for the habit
+    return habit.categories.map((category: Category) => {
+      const foundCategory = DEFAULT_CATEGORIES.find(
+        (cat) => cat.text === category.text
+      );
+      return foundCategory || DEFAULT_CATEGORIES[0];
+    });
   };
 
   const getHabitEmoji = (habit: any): string => {
@@ -328,6 +94,47 @@ const ExploreHabits = () => {
     return "✨"; // Default emoji
   };
 
+  const getPrimaryCategory = (habit: any): Category => {
+    // Get the primary category (first one) for main styling
+    return getHabitCategories(habit)[0];
+  };
+
+  const getCategoryGradient = (
+    categories: Category[]
+  ): [string, string, ...string[]] => {
+    if (categories.length === 1) {
+      return [categories[0].hexColor + "40", categories[0].hexColor + "20"];
+    }
+
+    // Create gradient from multiple category colors with higher opacity
+    const colors = categories.map((cat) => cat.hexColor + "50");
+    if (colors.length === 2) {
+      return [colors[0], colors[1]];
+    } else if (colors.length === 3) {
+      return [colors[0], colors[1], colors[2]];
+    } else {
+      return [colors[0], colors[1], colors[2], colors[3]];
+    }
+  };
+
+  const getEmojiGradient = (
+    categories: Category[]
+  ): [string, string, ...string[]] => {
+    if (categories.length === 1) {
+      return [categories[0].hexColor + "20", categories[0].hexColor + "10"];
+    }
+
+    // Create gradient for emoji background
+    const colors = categories.map((cat) => cat.hexColor + "25");
+    if (colors.length === 2) {
+      return [colors[0], colors[1]];
+    } else if (colors.length === 3) {
+      return [colors[0], colors[1], colors[2]];
+    } else {
+      return [colors[0], colors[1], colors[2], colors[3]];
+    }
+  };
+
   // Update selected category when initial category changes
   useEffect(() => {
     if (initialCategory) {
@@ -335,13 +142,20 @@ const ExploreHabits = () => {
     }
   }, [initialCategory]);
 
+  // Scroll to the end of category list by default
+  useEffect(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: false });
+    }, 100);
+  }, []);
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <StatusBar barStyle="light-content" />
+      <StatusBar style="light" />
 
       {/* Header */}
       <Animated.View
-        entering={FadeInDown.delay(100)}
+        entering={FadeInDown.delay(400)}
         className="bg-fore px-6 py-4"
       >
         <View className="flex-row items-center justify-between">
@@ -366,7 +180,7 @@ const ExploreHabits = () => {
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         {/* Search Section */}
-        <Animated.View entering={FadeInUp.delay(200)} className="px-6 py-4">
+        <Animated.View entering={FadeInUp.delay(600)} className="px-6 py-4">
           <View className="relative">
             <TextInput
               value={searchQuery}
@@ -390,26 +204,38 @@ const ExploreHabits = () => {
         </Animated.View>
 
         {/* Category Filter */}
-        <Animated.View entering={FadeInUp.delay(300)} className="px-6 mb-6">
+        <Animated.View className="pr-6 mb-6">
           <View className="flex-row-reverse items-center justify-between mb-3">
-            <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary">
+            <Animated.Text
+              entering={FadeInRight.delay(900)}
+              className="font-ibm-plex-arabic-semibold text-lg text-text-primary"
+            >
               الفئات
-            </Text>
-            {selectedCategory && (
-              <View className="bg-brand/20 px-3 py-1 rounded-full border border-brand/30">
-                <Text className="font-ibm-plex-arabic text-xs text-brand">
-                  {DEFAULT_CATEGORIES.find((cat) => cat.id === selectedCategory)
-                    ?.text || selectedCategory}
-                </Text>
-              </View>
-            )}
+            </Animated.Text>
+            <Animated.View className="h-10" entering={FadeIn} exiting={FadeOut}>
+              {(searchQuery || selectedCategory) && (
+                <Pressable
+                  onPress={() => {
+                    setSearchQuery("");
+                    setSelectedCategory(null);
+                  }}
+                  className="flex-row-reverse items-center justify-center    rounded-full px-3 py-2 gap-2 ml-2"
+                >
+                  <Ionicons name="close-circle" size={20} color="#E53935" />
+                </Pressable>
+              )}
+            </Animated.View>
           </View>
+
+          {/* Horizontal Category Scroll */}
           <ScrollView
+            ref={scrollViewRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 0 }}
           >
             <View className="flex-row" style={{ flexDirection: "row-reverse" }}>
+              {/* All Categories Button */}
               <Pressable
                 onPress={() => setSelectedCategory(null)}
                 className={`px-4 py-2 rounded-full ml-3 ${
@@ -418,59 +244,38 @@ const ExploreHabits = () => {
                     : "bg-white/5 border border-white/10"
                 }`}
               >
-                <Text
+                <Animated.Text
+                  entering={FadeInRight.delay(800)}
                   className={`font-ibm-plex-arabic-medium text-sm ${
                     selectedCategory === null ? "text-white" : "text-text-muted"
                   }`}
                 >
                   الكل
-                </Text>
+                </Animated.Text>
               </Pressable>
 
-              {/* Clear Filters Button */}
-              {(searchQuery || selectedCategory) && (
-                <Pressable
-                  onPress={() => {
-                    setSearchQuery("");
-                    setSelectedCategory(null);
-                  }}
-                  className="px-3 py-2 rounded-full bg-red-500/20 border border-red-500/30 ml-3"
-                >
-                  <Text className="font-ibm-plex-arabic text-xs text-red-400">
-                    مسح
-                  </Text>
-                </Pressable>
-              )}
-
+              {/* Category Buttons */}
               {DEFAULT_CATEGORIES.map((category, index) => (
                 <Animated.View
-                  key={category.id}
-                  entering={FadeInUp.delay(400 + index * 50)}
+                  key={category.text}
+                  entering={FadeInLeft.delay(800 + index * 50)}
                 >
                   <Pressable
-                    onPress={() => setSelectedCategory(category.id)}
-                    className={`px-4 py-2 rounded-full ml-3 border active:scale-95 ${
-                      selectedCategory === category.id
+                    onPress={() => setSelectedCategory(category.text)}
+                    className={`px-4  rounded-full ml-3 border active:scale-95 ${
+                      selectedCategory === category.text
                         ? "border-white/20"
                         : "border-white/10"
                     }`}
                     style={{
                       backgroundColor:
-                        selectedCategory === category.id
-                          ? category.hexColor + "20"
+                        selectedCategory === category.text
+                          ? "#00AEEF"
                           : "rgba(255,255,255,0.05)",
                     }}
                     android_ripple={{ color: category.hexColor + "20" }}
                   >
-                    <Text
-                      className="font-ibm-plex-arabic-medium text-sm"
-                      style={{
-                        color:
-                          selectedCategory === category.id
-                            ? category.hexColor
-                            : "#6C7684",
-                      }}
-                    >
+                    <Text className="font-ibm-plex-arabic-medium py-2 text-text-primary text-sm">
                       {category.text}
                     </Text>
                   </Pressable>
@@ -480,159 +285,168 @@ const ExploreHabits = () => {
           </ScrollView>
         </Animated.View>
 
-        {/* Habits Grid */}
-        <Animated.View entering={FadeInUp.delay(400)} className="px-6">
-          <View className="flex-row-reverse items-center justify-between mb-4">
-            <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary">
-              العادات
-            </Text>
-            <View className="bg-white/10 px-3 py-1 rounded-full">
-              <Text className="font-ibm-plex-arabic-medium text-sm text-text-muted">
-                {filteredHabits.length} عادة
-              </Text>
+        {/* Loading State */}
+        {isLoading && (
+          <Animated.View
+            entering={FadeInUp.delay(800)}
+            className="items-center justify-center py-20 px-6"
+          >
+            <View className="w-20 h-20 bg-fore rounded-full items-center justify-center mb-6">
+              <Ionicons name="refresh" size={40} color="#00AEEF" />
             </View>
-          </View>
+            <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary text-center mb-3">
+              جاري تحميل العادات...
+            </Text>
+          </Animated.View>
+        )}
 
-          <View className="gap-4">
-            {filteredHabits.map((habit, index) => {
-              const category = getHabitCategory(habit);
-              const emoji = getHabitEmoji(habit);
+        {/* Error State */}
+        {error && (
+          <Animated.View
+            entering={FadeInUp.delay(800)}
+            className="items-center justify-center py-20 px-6"
+          >
+            <View className="w-20 h-20 bg-fore rounded-full items-center justify-center mb-6">
+              <Ionicons name="alert-circle" size={40} color="#E53935" />
+            </View>
+            <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary text-center mb-3">
+              حدث خطأ
+            </Text>
+            <Text className="font-ibm-plex-arabic text-base text-text-muted text-center leading-6 mb-4">
+              {error}
+            </Text>
+            <Pressable
+              onPress={() => window.location.reload()}
+              className="px-6 py-2 bg-brand/20 border border-brand/30 rounded-full"
+            >
+              <Text className="font-ibm-plex-arabic-medium text-sm text-brand">
+                إعادة المحاولة
+              </Text>
+            </Pressable>
+          </Animated.View>
+        )}
 
-              return (
-                <Animated.View
-                  key={habit.id}
-                  entering={FadeInLeft.delay(500 + index * 100)}
-                >
-                  <Pressable
-                    onPress={() => handleHabitPress(habit.id)}
-                    className="w-full rounded-2xl overflow-hidden border border-white/10 active:scale-95"
-                    style={{ backgroundColor: "#1a1a1a" }}
-                    android_ripple={{ color: "rgba(0, 174, 239, 0.1)" }}
+        {/* Habits Grid */}
+        {!isLoading && !error && (
+          <Animated.View entering={FadeInUp.delay(800)} className="px-6">
+            <View className="flex-row-reverse items-center justify-between mb-4">
+              <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary">
+                العادات
+              </Text>
+              <View className="bg-white/10 px-3 py-1 rounded-full">
+                <Text className="font-ibm-plex-arabic-medium text-sm text-text-muted">
+                  {filteredHabits.length} عادة
+                </Text>
+              </View>
+            </View>
+
+            <View className="gap-4">
+              {filteredHabits.map((habit, index) => {
+                const allCategories = getHabitCategories(habit);
+                const emoji = getHabitEmoji(habit);
+                const categoryGradient = getCategoryGradient(allCategories);
+                const emojiGradient = getEmojiGradient(allCategories);
+
+                return (
+                  <Animated.View
+                    layout={LinearTransition.duration(200)}
+                    key={habit.id}
+                    entering={
+                      searchQuery || selectedCategory
+                        ? undefined
+                        : FadeInUp.delay(600 + index * 50)
+                    }
                   >
-                    {/* Background with subtle pattern */}
-                    <View className="absolute inset-0 opacity-5">
-                      <View
-                        className="w-full h-full"
+                    <Pressable
+                      onPress={() => handleHabitPress(habit.id)}
+                      className="w-full rounded-2xl overflow-hidden border border-white/10 active:scale-95"
+                      style={{ backgroundColor: "#1a1a1a" }}
+                      android_ripple={{ color: "rgba(0, 174, 239, 0.1)" }}
+                    >
+                      {/* Background with full gradient */}
+                      <LinearGradient
+                        colors={categoryGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                         style={{
-                          backgroundColor: category.hexColor,
-                          opacity: 0.1,
+                          position: "absolute",
+                          inset: 0,
+                          opacity: 0.2,
                         }}
                       />
-                    </View>
 
-                    {/* Content */}
-                    <View className="p-4">
-                      <View className="flex-row-reverse items-start justify-between mb-3">
-                        {/* Emoji and Title */}
-                        <View className="flex-row-reverse items-center flex-1">
-                          <View
-                            className="w-12 h-12 rounded-xl items-center justify-center mr-3"
-                            style={{
-                              backgroundColor: category.hexColor + "20",
-                            }}
-                          >
-                            <Text className="text-2xl">{emoji}</Text>
-                          </View>
+                      {/* Subtle overlay for text readability */}
+                      <View
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          backgroundColor: "rgba(0,0,0,0.3)",
+                        }}
+                      />
 
-                          <View className="flex-1">
-                            <Text className="font-ibm-plex-arabic-bold text-lg text-text-primary mb-1 text-right">
-                              {habit.title}
-                            </Text>
-                            <Text className="font-ibm-plex-arabic text-sm text-text-muted text-right leading-5">
-                              {habit.whyDescription}
-                            </Text>
-                          </View>
-                        </View>
-
-                        {/* Category Badge */}
-                        <View
-                          className="px-3 py-1 rounded-full border"
-                          style={{
-                            backgroundColor: category.hexColor + "20",
-                            borderColor: category.hexColor + "30",
-                          }}
-                        >
-                          <Text
-                            className="font-ibm-plex-arabic text-xs font-medium"
-                            style={{ color: category.hexColor }}
-                          >
-                            {category.text}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Benefits */}
-                      {habit.benefit.length > 0 && (
-                        <View className="mb-3">
-                          <Text className="font-ibm-plex-arabic-medium text-sm text-text-primary text-right mb-2">
-                            الفوائد:
-                          </Text>
-                          <View className="flex-row-reverse flex-wrap gap-2">
-                            {habit.benefit.slice(0, 2).map((benefit, idx) => (
-                              <View
-                                key={idx}
-                                className="px-3 py-1 rounded-full"
+                      {/* Content */}
+                      <View className="p-4">
+                        <View className="flex-row-reverse items-start justify-between mb-3">
+                          {/* Emoji and Title */}
+                          <View className="flex-row-reverse items-center flex-1 gap-3">
+                            <View className="w-12 h-12 rounded-xl items-center justify-center mr-3 overflow-hidden">
+                              <LinearGradient
+                                colors={emojiGradient}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
                                 style={{
-                                  backgroundColor: category.hexColor + "15",
+                                  width: "100%",
+                                  height: "100%",
+                                  justifyContent: "center",
+                                  alignItems: "center",
                                 }}
                               >
-                                <Text
-                                  className="font-ibm-plex-arabic text-xs"
-                                  style={{ color: category.hexColor }}
-                                >
-                                  {benefit}
-                                </Text>
-                              </View>
-                            ))}
-                            {habit.benefit.length > 2 && (
-                              <View
-                                className="px-3 py-1 rounded-full"
-                                style={{
-                                  backgroundColor: category.hexColor + "15",
-                                }}
-                              >
-                                <Text
-                                  className="font-ibm-plex-arabic text-xs"
-                                  style={{ color: category.hexColor }}
-                                >
-                                  +{habit.benefit.length - 2}
-                                </Text>
-                              </View>
-                            )}
+                                <Text className="text-2xl">{emoji}</Text>
+                              </LinearGradient>
+                            </View>
+
+                            <View className="flex-1">
+                              <Text className="font-ibm-plex-arabic-bold text-lg text-text-primary mb-1 text-right">
+                                {habit.title}
+                              </Text>
+                              <Text className="font-ibm-plex-arabic text-sm text-text-muted text-right leading-5">
+                                {habit.whyDescription}
+                              </Text>
+                            </View>
                           </View>
                         </View>
-                      )}
 
-                      {/* Quote */}
-                      {habit.quote && (
-                        <View className="border-t border-white/10 pt-3">
-                          <Text className="font-ibm-plex-arabic text-sm text-text-muted text-right italic">
-                            "{habit.quote}"
-                          </Text>
+                        {/* Quote */}
+                        {habit.quote && (
+                          <View className="border-t mt-5 border-white/10 pt-3">
+                            <Text className="font-ibm-plex-arabic-light text-sm text-text-brand text-right ">
+                              {habit.quote}
+                            </Text>
+                          </View>
+                        )}
+
+                        {/* Arrow indicator */}
+                        <View className="absolute top-4 left-4">
+                          <Ionicons
+                            name="chevron-back"
+                            size={16}
+                            color="#00AEEF"
+                          />
                         </View>
-                      )}
-
-                      {/* Arrow indicator */}
-                      <View className="absolute top-4 left-4">
-                        <Ionicons
-                          name="chevron-back"
-                          size={16}
-                          color={category.hexColor}
-                        />
                       </View>
-                    </View>
-                  </Pressable>
-                </Animated.View>
-              );
-            })}
-          </View>
-        </Animated.View>
+                    </Pressable>
+                  </Animated.View>
+                );
+              })}
+            </View>
+          </Animated.View>
+        )}
 
         {/* Empty State */}
-        {filteredHabits.length === 0 && (
+        {!isLoading && !error && filteredHabits.length === 0 && (
           <Animated.View
-            entering={FadeInUp.delay(600)}
-            className="items-center justify-center py-20 px-6"
+            entering={FadeInUp.delay(1000)}
+            className="items-center justify-center  py-20 px-6"
           >
             <View className="w-20 h-20 bg-fore rounded-full items-center justify-center mb-6">
               <Ionicons
@@ -678,7 +492,7 @@ const ExploreHabits = () => {
                   <View className="flex-row flex-wrap justify-center gap-2">
                     {DEFAULT_CATEGORIES.slice(0, 4).map((category) => (
                       <View
-                        key={category.id}
+                        key={category.text}
                         className="px-3 py-1 rounded-full"
                         style={{ backgroundColor: category.hexColor + "20" }}
                       >

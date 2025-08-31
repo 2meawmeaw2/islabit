@@ -24,6 +24,7 @@ import {
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -56,21 +57,25 @@ export default function RootLayout() {
   }, [fontsLoaded]);
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: "fade", // ← make pushes slide, not fade
-        gestureEnabled: true,
+    <AuthProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "fade", // ← make pushes slide, not fade
+          gestureEnabled: true,
 
-        contentStyle: {
-          backgroundColor: "#00070A",
-        },
-      }}
-    >
-      <Stack.Screen name="index" />
-
-      <Stack.Screen name="sign" />
-      <Stack.Screen name="moreInfo" />
-    </Stack>
+          contentStyle: {
+            backgroundColor: "#00070A",
+          },
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="sign" />
+        <Stack.Screen name="moreInfo" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="email-confirmation" />
+        <Stack.Screen name="test-auth" />
+      </Stack>
+    </AuthProvider>
   );
 }

@@ -1,13 +1,13 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { PrayerTime } from "@/utils/types/types";
+import { Prayer } from "@/types/salat";
 import { PRAYERS } from "@/assets/constants/prayers";
 import S from "../../assets/styles/shared";
 import { Button } from "../textButton";
 const DailyCard: React.FC<{
   today: Date;
   onOpenDaily?: (date?: Date) => void;
-  prayers?: PrayerTime[]; // optional override
+  prayers?: Prayer[]; // optional override
 }> = ({ today, onOpenDaily, prayers = PRAYERS }) => {
   return (
     <View className="bg-fore border-[1px] border-border-primary/80 p-[12px] rounded-2xl">

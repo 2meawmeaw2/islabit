@@ -5,21 +5,20 @@ import { WeekDayAr, WEEK_DAYS } from "./dates";
 
 // New Category interface for habits and bundles
 export interface Category {
-  id: string;
   text: string;
   hexColor: string;
 }
 
-// Default categories with Islamic and lifestyle themes
+// Default categories with Islamic and lifestyle themes - using Arabic IDs
 export const DEFAULT_CATEGORIES: Category[] = [
-  { id: "spiritual", text: "روحاني", hexColor: "#8B5CF6" }, // Spiritual - Purple
-  { id: "health", text: "صحي", hexColor: "#10B981" }, // Health - Green
-  { id: "educational", text: "تعليمي", hexColor: "#3B82F6" }, // Educational - Blue
-  { id: "social", text: "اجتماعي", hexColor: "#F59E0B" }, // Social - Amber
-  { id: "financial", text: "مالي", hexColor: "#EF4444" }, // Financial - Red
-  { id: "family", text: "عائلي", hexColor: "#EC4899" }, // Family - Pink
-  { id: "work", text: "عمل", hexColor: "#6B7280" }, // Work - Gray
-  { id: "sports", text: "رياضة", hexColor: "#059669" }, // Sports - Emerald
+  { text: "روحاني", hexColor: "#8B5CF6" }, // Spiritual - Purple
+  { text: "صحي", hexColor: "#10B981" }, // Health - Green
+  { text: "تعليمي", hexColor: "#3B82F6" }, // Educational - Blue
+  { text: "اجتماعي", hexColor: "#F59E0B" }, // Social - Amber
+  { text: "مالي", hexColor: "#EF4444" }, // Financial - Red
+  { text: "عائلي", hexColor: "#EC4899" }, // Family - Pink
+  { text: "عمل", hexColor: "#6B7280" }, // Work - Gray
+  { text: "رياضة", hexColor: "#059669" }, // Sports - Emerald
 ];
 
 export interface HabitProps {
@@ -35,14 +34,16 @@ export interface HabitProps {
   priorityColor?: string; // Optional custom color for the priority label
   category: Category; // New: Category for the habit
 }
+
 export interface HabitsShopHabit {
-  id: number; // Unique identifier for the habit
+  id: string; // Unique identifier for the habit (UUID)
   title: string; // Name or title of the habit
   benefit: string[];
   quote: string; // Motivational or related quote
-
   whyDescription: string; // Description of the habit
   suggestedRelatedSalat: import("./salat").Prayer[]; // (Optional) Name of the related prayer, if any
   suggestedRelatedDays?: WeekDayAr[]; // (Optional) Days of the week related to the habit (e.g., ["Monday", "Thursday"])
+  categories: Category[]; // Array of category IDs that this habit belongs to
 }
+
 export type HabitDay = 0 | 1 | 2 | 3 | 4 | 5 | 6;

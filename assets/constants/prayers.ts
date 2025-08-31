@@ -1,6 +1,6 @@
-import { PrayerTime } from "../../utils/types/types";
+import { Prayer } from "../../types/salat";
 
-export const PRAYERS: PrayerTime[] = [
+export const PRAYERS: Prayer[] = [
   { key: "fajr", name: "الفجر", time: "05:00", emoji: "🌅" },
   { key: "dhuhr", name: "الظهر", time: "12:30", emoji: "☀️" },
   { key: "asr", name: "العصر", time: "16:00", emoji: "🌤️" },

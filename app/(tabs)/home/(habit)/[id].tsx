@@ -1,9 +1,10 @@
 // app/habit-details/[id].tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Switch, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { habits } from "@/lib/habits";
+import { fetchHabitById } from "@/lib/habits-api";
+import { HabitFromAPI } from "@/lib/habits-api";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -15,31 +16,83 @@ import Animated, {
 const HabitDetails = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const [habit, setHabit] = useState<HabitFromAPI | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Find habit (no useMemo)
-  const habit = habits.find((h) => String(h.id) === String(id));
+  useEffect(() => {
+    const loadHabit = async () => {
+      if (!id) return;
+
+      try {
+        setIsLoading(true);
+        const habitData = await fetchHabitById(id);
+        setHabit(habitData);
+      } catch (err) {
+        console.error("Error loading habit:", err);
+        setError("حدث خطأ في تحميل العادة");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadHabit();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView className="bg-bg flex-1">
+        <View className="flex-1 items-center justify-center">
+          <Text className="font-ibm-plex-arabic text-text-primary">
+            جاري التحميل...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !habit) {
+    return (
+      <SafeAreaView className="bg-bg flex-1">
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="font-ibm-plex-arabic text-text-primary text-center mb-4">
+            {error || "العادة غير موجودة"}
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="px-6 py-2 bg-brand/20 border border-brand/30 rounded-full"
+          >
+            <Text className="font-ibm-plex-arabic text-brand">رجوع</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // Fallbacks
-  const habitName = habit?.habitName ?? "عادة";
-  const targetPerWeek = habit?.targetPerWeek ?? "5 أيام/أسبوع";
-  const bestTime = habit?.bestTime ?? "بعد الفجر";
-  const emoji = habit?.emoji ?? "📘";
-  const quoteText = habit?.quote?.text ?? "من داوم على القليل بلّغه الكثير.";
-  const quoteSource = habit?.quote?.source;
+  const habitName = habit.title ?? "عادة";
+  const targetPerWeek = "5 أيام/أسبوع"; // Default value
+  const bestTime = "بعد الفجر"; // Default value
+  const emoji = "📘"; // Default emoji
+  const quoteText = habit.quote ?? "من داوم على القليل بلّغه الكثير.";
   const habitWhy =
-    habit?.why ?? "بناء عادة يومية صغيرة يقوّي هويتك ويثبت مسارك.";
+    habit.description ?? "بناء عادة يومية صغيرة يقوّي هويتك ويثبت مسارك.";
 
   // Local state (seeded once from data)
   const todayIdx = new Date().getDay(); // 0..6 Sun..Sat
-  const [weeklyChecks, setWeeklyChecks] = useState<boolean[]>(
-    habit?.weeklyChecks ?? [false, false, false, false, false, false, false]
-  );
-  const [streak, setStreak] = useState<number>(habit?.streak ?? 0);
+  const [weeklyChecks, setWeeklyChecks] = useState<boolean[]>([
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
+  const [streak, setStreak] = useState<number>(0);
   const [remindersOn, setRemindersOn] = useState(true);
 
   const committedToday = weeklyChecks[todayIdx];
-
-  // Parse target days from "7 أيام/أسبوع"
 
   // Nice Arabic date (compute directly—no memo)
   const dateStr = new Date().toLocaleDateString("ar-EG", {
@@ -148,7 +201,7 @@ const HabitDetails = () => {
               لماذا هذه العادة؟
             </Text>
             <Text className="font-ibm-plex-arabic-thin text-text-secondary text-right leading-6">
-              {habitWhy} long explaination + ressources to check
+              {habitWhy}
             </Text>
 
             {/* reminders */}
@@ -193,13 +246,8 @@ const HabitDetails = () => {
           {quoteText ? (
             <View className="bg-fore border-r-4 border-text-brand rounded-lg p-3 mt-4">
               <Text className="font-ibm-plex-arabic text-text-secondary text-center text-sm leading-5">
-                {`“${quoteText}”`}
+                {`"${quoteText}"`}
               </Text>
-              {quoteSource ? (
-                <Text className="font-ibm-plex-arabic-light text-text-disabled text-center text-xs mt-1">
-                  {quoteSource}
-                </Text>
-              ) : null}
             </View>
           ) : null}
 

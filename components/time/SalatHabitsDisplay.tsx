@@ -578,18 +578,20 @@ const HabitItem: React.FC<{
         </AnimatedPressable>
 
         {/* Simple Arrow with subtle animation */}
-        <Animated.View
-          entering={FadeIn.delay(150 + index * 40)
-            .duration(400)
-            .easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={16}
-            color="#4B9AB5"
-            className="ml-2"
-          />
-        </Animated.View>
+        <Pressable onPress={() => onPress(habit)}>
+          <Animated.View
+            entering={FadeIn.delay(150 + index * 40)
+              .duration(400)
+              .easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={16}
+              color="#4B9AB5"
+              className="ml-2"
+            />
+          </Animated.View>
+        </Pressable>
       </Animated.View>
     </Animated.View>
   );

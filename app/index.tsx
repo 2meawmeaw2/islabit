@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
-import { Pressable, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, Text, TouchableOpacity, View, Alert } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -10,9 +10,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "@/lib/auth";
 
 const WelcomeMinimalUI: React.FC = ({}) => {
   const router = useRouter();
+  const { user, signOut, loading } = useAuth();
 
   const a = useSharedValue(0);
   const s = useAnimatedStyle(() => ({
@@ -45,8 +47,30 @@ const WelcomeMinimalUI: React.FC = ({}) => {
       alert(err);
     }
   };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      Alert.alert("تم تسجيل الخروج", "تم تسجيل الخروج بنجاح");
+    } catch (error) {
+      Alert.alert("خطأ", "حدث خطأ أثناء تسجيل الخروج");
+    }
+  };
   return (
     <SafeAreaView className="bg-bg flex-1 ">
+      {/* Debug Info - User Status */}
+      <View className="absolute top-4 left-4 right-4 z-10">
+        <View className="bg-fore border border-border-secondary rounded-lg p-3">
+          <Text className="font-ibm-plex-arabic text-text-primary text-sm text-center">
+            {loading
+              ? "جاري التحميل..."
+              : user
+                ? `مرحباً ${user.email}`
+                : "غير مسجل الدخول"}
+          </Text>
+        </View>
+      </View>
+
       <View className="  flex-1 items-center justify-center px-8">
         <Animated.View style={s} className="items-center">
           <View
@@ -120,6 +144,21 @@ const WelcomeMinimalUI: React.FC = ({}) => {
               login here sign up above the one above me
             </Text>
           </TouchableOpacity>
+
+          {/* Logout Button - Only show if user is logged in */}
+          {user && (
+            <TouchableOpacity
+              onPress={handleLogout}
+              className="bg-red-600 rounded-2xl py-3 px-6 mt-4"
+              activeOpacity={0.9}
+              accessibilityRole="button"
+              accessibilityLabel="تسجيل الخروج"
+            >
+              <Text className="font-ibm-plex-arabic-bold text-center w-full text-white text-base">
+                تسجيل الخروج
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Secondary link */}
           <TouchableOpacity

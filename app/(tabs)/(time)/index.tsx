@@ -191,17 +191,13 @@ const OrganizeModes: React.FC = () => {
   );
 
   const handleHabitPress = (habit: any) => {
-    const habitData = {
-      id: habit.id,
-      title: habit.title,
-      description: habit.description,
-      streak: habit.streak,
-      priority: habit.priority,
-      relatedDays: habit.relatedDays || [],
-      relatedSalat: habit.relatedSalat || [],
-      completed: habit.completed || [],
-      selectedDate: getDateStr(selectedDate), // Add current selected date
-    };
+    router.push({
+      pathname: "/(tabs)/(time)/habitDetails",
+      params: {
+        habit: JSON.stringify(habit),
+        habitId: habit.id,
+      },
+    });
   };
 
   if (isLoading) {
@@ -273,7 +269,7 @@ const OrganizeModes: React.FC = () => {
           <View className="mt-6">
             {habits.length === 0 ? (
               <View className="mx-4 mt-8 items-center">
-                <View className="bg-bg rounded-2xl p-8 items-center border border-border-secondary">
+                <View className="bg-bg rounded-2xl p-8 items-center border border-text-brand">
                   <Ionicons name="leaf-outline" size={48} color="#6C7684" />
                   <Text className="text-text-primary font-ibm-plex-arabic-bold text-xl mt-4 text-center">
                     ابدأ رحلتك
