@@ -10,6 +10,7 @@ import {
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "react-native";
+import { shadowStyle } from "@/lib/shadow";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeOut, Layout } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -100,12 +101,12 @@ const ForgotPasswordScreen = () => {
                     source={require("@/assets/images/logo.png")}
                     className="w-20 h-20"
                     resizeMode="contain"
-                    style={{
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                    }}
+                    style={shadowStyle({
+                      color: "#000",
+                      offset: { width: 0, height: 4 },
+                      opacity: 0.3,
+                      radius: 8,
+                    })}
                   />
                 </Animated.View>
 

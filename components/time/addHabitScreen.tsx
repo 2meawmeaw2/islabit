@@ -41,7 +41,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
   const [description, setDescription] = useState("");
   const [selectedDays, setSelectedDays] = useState<HabitDay[]>([0]);
   const [salat, setSalat] = useState<PrayerKey[]>(["fajr"]);
-  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  // priority state removed - no longer needed
   const [category, setCategory] = useState<Category>(DEFAULT_CATEGORIES[0]); // Default to first category
 
   // Live preview props (kept separate so we don't mutate the final object by mistake)
@@ -74,7 +74,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
       completed: [], // no days completed yet
       relatedDays: [...selectedDays].sort((a, b) => a - b),
       relatedSalat: [...salat],
-      priority,
+      // priority removed - no longer needed
       category, // Add the selected category
     };
 
@@ -90,7 +90,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
       if (onClose) {
         onClose();
       } else {
-        router.navigate("/(tabs)/(time)");
+        router.navigate("/(tabs)/time");
       }
     } catch (error) {
       console.error("Error saving habit:", error);
@@ -203,62 +203,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
         />
       </View>
 
-      {/* Priority selector */}
-      <View style={styles.section}>
-        <Text className="text-text-primary font-ibm-plex-arabic text-right">
-          الأولوية
-        </Text>
-        <View style={styles.priorityRow}>
-          {[
-            {
-              key: "low" as const,
-              label: "منخفضة",
-              color: "#059669",
-              icon: "checkmark-circle",
-            },
-            {
-              key: "medium" as const,
-              label: "متوسطة",
-              color: "#D97706",
-              icon: "time",
-            },
-            {
-              key: "high" as const,
-              label: "عالية",
-              color: "#DC2626",
-              icon: "alert-circle",
-            },
-          ].map((option) => {
-            const selected = priority === option.key;
-            return (
-              <Pressable
-                key={option.key}
-                onPress={() => setPriority(option.key)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                className={`rounded-xl px-4 py-3 flex-1 items-center justify-center ${
-                  selected ? "border-2" : "border border-border-primary"
-                }`}
-                style={[
-                  selected && {
-                    borderColor: option.color,
-                    backgroundColor: `${option.color}20`,
-                  },
-                ]}
-              >
-                <View className="flex-row items-center gap-2">
-                  <Text
-                    style={[{ color: selected ? option.color : "#6B7280" }]}
-                    className="font-ibm-plex-arabic-semibold text-sm"
-                  >
-                    {option.label}
-                  </Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
+      {/* Priority selector removed - no longer needed */}
 
       {/* Category selector */}
       <View style={styles.section}>
@@ -360,7 +305,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
         <Pressable
           accessibilityRole="button"
           onPress={() =>
-            onClose ? onClose() : router.navigate("/(tabs)/(time)")
+            onClose ? onClose() : router.navigate("/(tabs)/time")
           }
           style={styles.headerBtn}
           hitSlop={8}
@@ -431,11 +376,7 @@ const styles = StyleSheet.create({
   salatEmoji: { fontSize: 18 },
   salatName: { color: "#E5E7EB" },
   salatTime: { color: "#94A3B8", fontSize: 11 },
-  priorityRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
-  },
+  // priorityRow style removed - no longer needed
 });
 
 export default AddHabitScreen;

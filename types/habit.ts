@@ -30,8 +30,6 @@ export interface HabitProps {
   completed: string[]; // Array of days (e.g., ["2024-06-01", "2024-06-02"]) when the habit was completed
   relatedSalat: PrayerKey[]; // (Optional) Name of the related prayer, if any
   relatedDays: number[]; // (Optional) Days of the week related to the habit (e.g., ["Monday", "Thursday"])
-  priority: string; // Priority label; supports custom labels (e.g., bundle name)
-  priorityColor?: string; // Optional custom color for the priority label
   category: Category; // New: Category for the habit
 }
 

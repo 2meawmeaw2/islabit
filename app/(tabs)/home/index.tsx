@@ -8,7 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import HabitTypesSection from "@/components/habits/HabitTypesSection";
 import { useHomeData } from "@/lib/use-home-data";
-
+import SvgHomeBg from "@/assets/images/svg-home-bg.svg";
 const AllHabits = () => {
   // Use centralized data fetching hook
   const { bundles, trendingHabits, isLoading, error, refetch } = useHomeData();
@@ -22,16 +22,19 @@ const AllHabits = () => {
     });
   };
 
-  const handleBundlePress = (bundleId: string) => {
-    // Find the bundle data
-    const bundle = bundles.find((b) => b.id === bundleId);
-    if (bundle) {
-      // Navigate to single bundle page with bundle data
-      router.push({
-        pathname: "/home/[singlebundle]",
-        params: { singlebundle: bundleId, bundleData: JSON.stringify(bundle) },
-      });
-    }
+  const handleBundlePress = (bundle: any) => {
+    // Serialize the bundle object to JSON string
+    console.log("this is the bundle that will get passed", bundle);
+    console.log(
+      "this is the bundle that will get passed as JSON string",
+      JSON.stringify(bundle)
+    );
+    router.push({
+      pathname: "/(tabs)/home/bundleCommit",
+      params: {
+        bundleData: JSON.stringify(bundle), // Convert to JSON string
+      },
+    });
   };
 
   const handleTrendingHabitPress = (habitId: string) => {
@@ -42,16 +45,12 @@ const AllHabits = () => {
     });
   };
 
-  const handleTrendingBundlePress = (bundleId: string) => {
-    // Find the bundle data
-    const bundle = bundles.find((b) => b.id === bundleId);
-    if (bundle) {
-      // Navigate to single bundle page with bundle data
-      router.push({
-        pathname: "/home/[singlebundle]",
-        params: { singlebundle: bundleId, bundleData: JSON.stringify(bundle) },
-      });
-    }
+  const handleTrendingBundlePress = (bundle: any) => {
+    // Navigate to bundle page with bundle data directly
+    router.push({
+      pathname: "/(tabs)/home/bundleCommit",
+      params: { bundleData: JSON.stringify(bundle) },
+    });
   };
 
   return (
@@ -72,19 +71,35 @@ const AllHabits = () => {
       </View>
 
       <ScrollView
-        contentContainerClassName="py-6 gap-8"
+        contentContainerClassName="pb-6 gap-8"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* First HabitBundlesSection */}
-        <HabitBundlesSection
-          onBundlePress={handleBundlePress}
-          bundles={bundles}
-          isLoading={isLoading}
-          error={error}
-        />
+        <View className="relative ">
+          <View
+            style={{
+              width: "100%",
+              height: "150%",
+              transform: [{ translateY: -100 }],
+            }}
+            className=" absolute top-0 right-0 -z-10"
+          >
+            <SvgHomeBg
+              width="120%"
+              height="120%"
+              preserveAspectRatio="xMidYMid slice"
+            />
+          </View>
 
+          <HabitBundlesSection
+            onBundlePress={handleBundlePress}
+            bundles={bundles}
+            isLoading={isLoading}
+            error={error}
+          />
+        </View>
         {/* Trending Section - Habits and Bundles */}
+
         <TrendingSection
           onHabitPress={handleTrendingHabitPress}
           onBundlePress={handleTrendingBundlePress}

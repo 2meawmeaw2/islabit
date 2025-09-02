@@ -35,6 +35,31 @@ export default function TabsLayout() {
           animation: "ios_from_right",
         }}
       />
+
+      <Stack.Screen
+        name="tracking/index"
+        options={{
+          headerShown: false,
+          title: "التتبع",
+          animation: "ios_from_right",
+        }}
+      />
+      <Stack.Screen
+        name="tracking/habits"
+        options={{
+          headerShown: false,
+          title: "تتبع العادات",
+          animation: "ios_from_right",
+        }}
+      />
+      <Stack.Screen
+        name="tracking/bundle"
+        options={{
+          headerShown: false,
+          title: "تتبع الحزمة",
+          animation: "ios_from_right",
+        }}
+      />
     </Stack>
   );
 }

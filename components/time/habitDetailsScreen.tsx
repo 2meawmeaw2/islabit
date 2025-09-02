@@ -1,4 +1,5 @@
 import { PRAYERS, COLORS as PRAYER_COLORS } from "@/lib/prayers";
+import { shadowStyle } from "@/lib/shadow";
 import { HabitDay, HabitProps } from "@/types/habit";
 import { PrayerKey } from "@/types/salat";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,11 +34,7 @@ const DAY_NAMES = [
   "الجمعة",
   "السبت",
 ];
-const PRIORITY_OPTIONS = [
-  { value: "low", label: "منخفضة", color: "#10B981", icon: "checkmark-circle" },
-  { value: "medium", label: "متوسطة", color: "#F59E0B", icon: "time" },
-  { value: "high", label: "عالية", color: "#EF4444", icon: "alert-circle" },
-];
+// PRIORITY_OPTIONS removed - no longer needed
 
 type HabitDetailsScreenProps = { habit?: HabitProps };
 
@@ -213,44 +210,7 @@ const DayPills = ({
   </View>
 );
 
-// Simple Priority Selector Component
-const PrioritySelector = ({
-  priority,
-  onSelect,
-}: {
-  priority: string;
-  onSelect: (priority: string) => void;
-}) => (
-  <View style={styles.priorityContainer}>
-    {PRIORITY_OPTIONS.map((option) => (
-      <Pressable
-        key={option.value}
-        onPress={() => onSelect(option.value)}
-        style={[
-          styles.priorityOption,
-          priority === option.value && {
-            backgroundColor: `${option.color}15`,
-            borderColor: option.color,
-          },
-        ]}
-      >
-        <Ionicons
-          name={option.icon as any}
-          size={18}
-          color={priority === option.value ? option.color : "#64748B"}
-        />
-        <Text
-          className="font-ibm-plex-arabic-medium text-sm mt-2"
-          style={{
-            color: priority === option.value ? option.color : "#64748B",
-          }}
-        >
-          {option.label}
-        </Text>
-      </Pressable>
-    ))}
-  </View>
-);
+// PrioritySelector component removed - no longer needed
 
 // Simple Salat Selector Component
 const SalatSelector = ({
@@ -548,49 +508,7 @@ export const HabitDetailsScreen: React.FC<HabitDetailsScreenProps> = ({
             )}
           </Section>
 
-          {/* Priority Section */}
-          <Section icon="flag" title="الأولوية">
-            {isEditing ? (
-              <PrioritySelector
-                priority={habit.priority || "medium"}
-                onSelect={(priority) =>
-                  updateHabit({ priority: priority as any })
-                }
-              />
-            ) : (
-              <View
-                style={[
-                  styles.priorityBadge,
-                  {
-                    backgroundColor: `${habit.priorityColor || getPriorityColor(habit.priority)}15`,
-                    borderColor:
-                      habit.priorityColor || getPriorityColor(habit.priority),
-                  },
-                ]}
-              >
-                <Text
-                  className="font-ibm-plex-arabic-medium text-sm ml-3"
-                  style={{
-                    color:
-                      habit.priorityColor || getPriorityColor(habit.priority),
-                  }}
-                >
-                  {!["low", "medium", "high"].includes(habit.priority as any)
-                    ? habit.priority
-                    : PRIORITY_OPTIONS.find(
-                        (p) => p.value === (habit.priority || "medium")
-                      )?.label}
-                </Text>
-                <Ionicons
-                  name={getPriorityIcon(habit.priority) as any}
-                  size={18}
-                  color={
-                    habit.priorityColor || getPriorityColor(habit.priority)
-                  }
-                />
-              </View>
-            )}
-          </Section>
+          {/* Priority Section removed - no longer needed */}
 
           {/* Category Section */}
           <Section icon="pricetag" title="الفئة">
@@ -744,21 +662,7 @@ export const HabitDetailsScreen: React.FC<HabitDetailsScreenProps> = ({
   );
 };
 
-// Helper functions
-const getPriorityColor = (priority: string = "medium") => {
-  const colors = { high: "#EF4444", medium: "#F59E0B", low: "#10B981" };
-  if (!["low", "medium", "high"].includes(priority as any)) return "#22C55E";
-  return colors[priority as keyof typeof colors] || "#6B7280";
-};
-
-const getPriorityIcon = (priority: string = "medium") => {
-  const icons = {
-    high: "alert-circle",
-    medium: "time",
-    low: "checkmark-circle",
-  };
-  return icons[priority as keyof typeof icons] || "ellipse-outline";
-};
+// Priority helper functions removed - no longer needed
 
 // Clean, simplified styles
 const styles = StyleSheet.create({
@@ -792,10 +696,12 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     backgroundColor: "#10B981",
-    shadowColor: "#10B981",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    ...shadowStyle({
+      color: "#10B981",
+      offset: { width: 0, height: 2 },
+      opacity: 0.3,
+      radius: 4,
+    }),
     elevation: 4,
   },
   disabled: { opacity: 0.4 },
@@ -826,10 +732,12 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: "#00AEEF",
     borderRadius: 3,
-    shadowColor: "#00AEEF",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
+    ...shadowStyle({
+      color: "#00AEEF",
+      offset: { width: 0, height: 1 },
+      opacity: 0.5,
+      radius: 2,
+    }),
   },
 
   // Sections
@@ -884,34 +792,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // Priority
-  priorityContainer: {
-    flexDirection: "row",
-    gap: 12,
-    justifyContent: "space-between",
-  },
-  priorityOption: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "#334155",
-    alignItems: "center",
-    backgroundColor: "#0F172A",
-    minHeight: 72,
-    justifyContent: "center",
-  },
-  priorityBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    alignSelf: "center",
-  },
+  // Priority styles removed - no longer needed
   categoryBadge: {
     flexDirection: "row",
     alignItems: "center",

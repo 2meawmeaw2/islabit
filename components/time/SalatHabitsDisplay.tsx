@@ -33,10 +33,10 @@ type SalatHabit = {
     date: string;
     prayer: string;
   }[]; // Array of completion records with date and prayer
-  priority?: string; // supports custom labels
-  priorityColor?: string;
   category?: { text: string; hexColor: string }; // Category for the habit
   isCompletedForSelectedDay?: boolean;
+  source?: "bundle" | "individual"; // Where the habit comes from
+  bundleTitle?: string; // Title of the bundle if source is "bundle"
 };
 
 type Props = {
@@ -48,11 +48,7 @@ type Props = {
   onAddHabit?: () => void;
 };
 
-// Simple priority indicator (dot)
-const getPriorityIndicator = (priority?: string, color?: string) => {
-  if (!priority) return "";
-  return "●";
-};
+// Priority indicator function removed - no longer needed
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -286,20 +282,13 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
                       return aCompleted ? 1 : -1; // Uncompleted first, completed last
                     }
 
-                    // If both have same completion status, sort by priority
-                    // Custom bundle priorities go on top
-                    const isCustomA =
-                      a.priority &&
-                      !["low", "medium", "high"].includes(a.priority as any);
-                    const isCustomB =
-                      b.priority &&
-                      !["low", "medium", "high"].includes(b.priority as any);
-                    if (isCustomA !== isCustomB) return isCustomA ? -1 : 1;
+                    // If both have same completion status, sort by source (bundles first)
+                    if (a.source !== b.source) {
+                      return a.source === "bundle" ? -1 : 1; // Bundles first
+                    }
 
-                    const priorityOrder = { high: 3, medium: 2, low: 1 } as any;
-                    const aPriority = priorityOrder[a.priority || "low"] || 0;
-                    const bPriority = priorityOrder[b.priority || "low"] || 0;
-                    return bPriority - aPriority; // Higher priority first
+                    // If both have same source, maintain original order
+                    return 0;
                   })
                   .map((habit, index) => (
                     <HabitItem
@@ -535,43 +524,20 @@ const HabitItem: React.FC<{
               {habit.title}
             </Animated.Text>
 
-            {/* Priority Badge (custom name with color or dot) */}
-            {habit.priority && (
+            {/* Bundle Indicator */}
+            {habit.source === "bundle" && habit.category && (
               <View className="ml-2 flex-row items-center">
-                <Text
-                  className="text-xs"
-                  style={{
-                    color:
-                      habit.priorityColor ||
-                      (isCompletedToday ? "#9CA3AF" : "#FFFFFF"),
-                  }}
-                >
-                  {getPriorityIndicator(habit.priority, habit.priorityColor)}
-                </Text>
-                {!["low", "medium", "high"].includes(habit.priority as any) && (
+                <View className="bg-sky-500/20 px-2 py-1 rounded-full">
                   <Text
-                    className=" ml-1 font-ibm-plex-arabic"
                     style={{
-                      color: habit.priorityColor || "#22C55E",
+                      color: habit.category.hexColor || "#22C55E",
                       fontSize: 10,
                     }}
-                    numberOfLines={1}
+                    className="text-xs text-sky-400 font-ibm-plex-arabic-medium"
                   >
-                    {habit.priority}
+                    {habit.bundleTitle}
                   </Text>
-                )}
-              </View>
-            )}
-
-            {/* Category Badge */}
-            {habit.category && (
-              <View
-                className="ml-2 px-2 py-1 rounded-full"
-                style={{ backgroundColor: habit.category.hexColor }}
-              >
-                <Text className="text-xs text-white font-ibm-plex-arabic">
-                  {habit.category.text}
-                </Text>
+                </View>
               </View>
             )}
           </View>

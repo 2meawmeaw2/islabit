@@ -12,10 +12,10 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
-        name="[singlebundle]"
+        name="bundleCommit"
         options={{
           headerShown: false,
-          title: "رحلة",
+          title: "العدّاد",
           animation: "slide_from_right",
         }}
       />

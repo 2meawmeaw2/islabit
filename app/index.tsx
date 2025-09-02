@@ -125,7 +125,7 @@ const WelcomeMinimalUI: React.FC = ({}) => {
             accessibilityLabel="ابدأ الآن"
           >
             <Text
-              onPress={() => press("(time)")}
+              onPress={() => press("time")}
               className="font-ibm-plex-arabic-bold text-center w-full text-bg text-base"
             >
               temo for u nigga

@@ -45,7 +45,7 @@ export const ActionCard: React.FC<Props> = memo(
     // --- Shared values
     const onPressNavigate = () => {
       router.navigate({
-        pathname: "/(tabs)/(time)/habitDetails",
+        pathname: "/(tabs)/time/habitDetails",
         params: {
           habit: JSON.stringify({
             id: id,

@@ -10,6 +10,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "react-native";
+import { shadowStyle } from "@/lib/shadow";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   FadeIn,
@@ -26,7 +27,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useAuth, getErrorMessage } from "@/lib/auth";
 import { router } from "expo-router";
 import { AuthGuard } from "@/components/AuthGuard";
-
+import { loadUserById } from "@/lib/usersTable";
+import { supabase } from "@/utils/supabase";
+import { useUserStore } from "@/store/userStore";
 const HERO_HEIGHT = 220;
 const AuthScreen = () => {
   const [mode, setMode] = useState<Mode>("signUp");
@@ -40,7 +43,7 @@ const AuthScreen = () => {
   const [showPassword, setShowPassword] = useState(true);
   const [showCPassword, setShowCPassword] = useState(true);
 
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
 
   const checkPasswordStrength = (pwd: string) => {
     let strength = 0;
@@ -138,11 +141,14 @@ const AuthScreen = () => {
 
     try {
       if (mode === "signIn") {
-        const { error } = await signIn(email, password);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) {
           Alert.alert("خطأ", getErrorMessage(error));
         } else {
-          // Success - user will be redirected automatically by auth state change
+          await loadUserById(data.user.id);
         }
       } else {
         const { error } = await signUp(email, password, fullName);
@@ -245,12 +251,12 @@ const AuthScreen = () => {
                       source={require("@/assets/images/logo.png")}
                       className="w-20 h-20"
                       resizeMode="contain"
-                      style={{
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 8,
-                      }}
+                      style={shadowStyle({
+                        color: "#000",
+                        offset: { width: 0, height: 4 },
+                        opacity: 0.3,
+                        radius: 8,
+                      })}
                     />
                   </Animated.View>
 

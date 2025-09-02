@@ -34,16 +34,34 @@ const OrganizeModes: React.FC = () => {
     prayer: string;
   };
 
-  // Load habits data
+  // Load habits data from both "habits" and "bundles" keys
   const loadHabits = useCallback(async () => {
     try {
       setIsLoading(true);
+
+      // Load individual habits
       const habitsData = await AsyncStorage.getItem("habits");
-      const loadedHabits = habitsData ? JSON.parse(habitsData) : [];
+      const individualHabits = habitsData ? JSON.parse(habitsData) : [];
+
+      // Load bundle habits
+      const bundlesData = await AsyncStorage.getItem("bundles");
+      const bundles = bundlesData ? JSON.parse(bundlesData) : [];
+
+      // Extract habits from bundles
+      const bundleHabits = bundles.flatMap((bundle: any) =>
+        (bundle.habits || []).map((habit: any) => ({
+          ...habit,
+          source: "bundle",
+          bundleTitle: bundle.title,
+        }))
+      );
+
+      // Combine all habits
+      const allHabits = [...individualHabits, ...bundleHabits];
 
       // Add completion status for the current selected date
       const currentDateStr = getDateStr(selectedDate);
-      const processedHabits = loadedHabits.map((habit: any) => {
+      const processedHabits = allHabits.map((habit: any) => {
         // Convert old format (string array) to new format (object array) if needed
         if (!habit.completed) {
           habit.completed = [];
@@ -62,7 +80,7 @@ const OrganizeModes: React.FC = () => {
         const isCompleted = habit.completed.some(
           (record: CompletionRecord) => record.date === currentDateStr
         );
-        console.log(habit);
+
         return {
           ...habit,
           isCompletedForSelectedDay: isCompleted,
@@ -111,7 +129,7 @@ const OrganizeModes: React.FC = () => {
           };
         });
     },
-    [habits, selectedDay]
+    [habits, selectedDay, getDateStr]
   );
 
   const handleToggleHabit = useCallback(
@@ -192,7 +210,7 @@ const OrganizeModes: React.FC = () => {
 
   const handleHabitPress = (habit: any) => {
     router.push({
-      pathname: "/(tabs)/(time)/habitDetails",
+      pathname: "/(tabs)/time/habitDetails",
       params: {
         habit: JSON.stringify(habit),
         habitId: habit.id,
@@ -212,7 +230,11 @@ const OrganizeModes: React.FC = () => {
   }
 
   const handleAddHabit = () => {
-    router.push("/(tabs)/(time)/addNewHabit");
+    router.push("/(tabs)/time/addNewHabit");
+  };
+
+  const handleGoToTracking = () => {
+    router.navigate("/(tabs)/time/tracking");
   };
 
   const clearAllStorage = async () => {
@@ -242,6 +264,12 @@ const OrganizeModes: React.FC = () => {
             </Text>
           </View>
           <View className="flex-row">
+            <Pressable
+              onPress={handleGoToTracking}
+              className="bg-text-brand/70 rounded-full justify-center items-center h-10 w-10 mr-2"
+            >
+              <Ionicons name="navigate-outline" size={20} color="white" />
+            </Pressable>
             <Pressable
               onPress={clearAllStorage}
               className="bg-red-500 rounded-full justify-center items-center h-10 w-10 mr-2"

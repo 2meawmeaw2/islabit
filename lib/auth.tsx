@@ -30,7 +30,9 @@ export interface AuthContextType {
 }
 
 // Create Auth Context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 // Auth Provider Component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -63,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       console.log("Attempting signup with:", email);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -76,6 +78,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error("Signup error:", error);
       } else {
+        const { data: createUserProfileData, error: createUserProfileError } =
+          await supabase.from("users").insert([
+            {
+              id: data.user?.id ?? "",
+              name: fullName,
+              points: 0, // Initialize with 0 points
+              commited_bundles: [], // Initialize empty array
+              commited_habits: [], // Initialize empty array
+              best_days: [],
+            },
+          ]);
+        if (createUserProfileError) {
+          console.error("Create user profile error:", createUserProfileError);
+        } else {
+          console.log("Create user profile successful", createUserProfileData);
+        }
         console.log("Signup successful, check email for confirmation");
       }
 
@@ -90,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       console.log("Attempting signin with:", email);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -99,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Signin error:", error);
       } else {
         console.log("Signin successful");
+        return { error, data };
       }
 
       return { error };

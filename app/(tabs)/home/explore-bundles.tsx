@@ -67,13 +67,12 @@ const ExploreBundles = () => {
     return filtered;
   }, [searchQuery, selectedCategory]);
 
-  const handleBundlePress = (bundleId: string) => {
+  const handleBundlePress = (bundle: any) => {
     router.push({
-      pathname: "/(tabs)/home/[singlebundle]",
-      params: { singlebundle: String(bundleId) },
+      pathname: "/(tabs)/home/bundleCommit",
+      params: { bundleData: JSON.stringify(bundle) },
     });
   };
-
   const handleBackPress = () => {
     router.navigate("/home");
   };
@@ -196,7 +195,7 @@ const ExploreBundles = () => {
               {filteredBundles.map((bundle: any) => (
                 <Pressable
                   key={bundle.id}
-                  onPress={() => handleBundlePress(bundle.id)}
+                  onPress={() => handleBundlePress(bundle)}
                   className="w-full mb-4 rounded-2xl overflow-hidden"
                   style={{ height: 200 }}
                 >

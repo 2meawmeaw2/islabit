@@ -26,46 +26,29 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from "react-native-reanimated";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { PRAYERS } from "@/lib/prayers";
-import { createHabit } from "@/lib/habits-api";
+import { shadowStyle } from "@/lib/shadow";
+
 import { Bundle } from "@/lib/bundles";
 
 const SingleBundleScreen = () => {
-  const { bundleData, singlebundle } = useLocalSearchParams<{
+  const { bundleData } = useLocalSearchParams<{
     bundleData?: string;
     singlebundle?: string;
   }>();
   const router = useRouter();
-  const [isEnrolling, setIsEnrolling] = useState(false);
   const [expandedHabits, setExpandedHabits] = useState<Set<number>>(new Set());
   const [bundle, setBundle] = useState<Bundle | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
-
   // Parse bundle data from params
   useEffect(() => {
-    try {
-      if (bundleData) {
-        const parsedBundle = JSON.parse(bundleData) as Bundle;
-        setBundle(parsedBundle);
-      } else {
-        setError("No bundle data provided");
-      }
-    } catch (err) {
-      console.error("Error parsing bundle data:", err);
-      setError("حدث خطأ في تحميل بيانات الحزمة");
-    } finally {
-      setLoading(false);
+    if (bundleData) {
+      const parsedBundle = JSON.parse(bundleData) as Bundle;
+      setBundle(parsedBundle);
     }
   }, [bundleData]);
-
   // Safety check - if no bundle found at all, redirect to home
-  if (!loading && !bundle) {
-    router.replace("/(tabs)/home");
-    return null;
-  }
 
   // Ensure bundle has required properties
   const safeBundle = bundle
@@ -158,93 +141,15 @@ const SingleBundleScreen = () => {
   const handleEnroll = async () => {
     if (!safeBundle) return;
 
-    try {
-      setIsEnrolling(true);
-
-      // Get existing habits from AsyncStorage
-      const existingHabitsData = await AsyncStorage.getItem("habits");
-      const existingHabits = existingHabitsData
-        ? JSON.parse(existingHabitsData)
-        : [];
-
-      // Convert the habits in the bundle to proper habit objects for Supabase
-      const bundleHabits = (safeBundle?.habits || []).map(
-        (habit: string | any, index: number) => {
-          // Check if the habit is a string or an object (backward compatibility with old data format)
-          const isHabitObject = typeof habit !== "string";
-          const habitTitle = isHabitObject ? habit.title : habit;
-
-          // Create a new habit object for Supabase (without ID)
-          const newHabit = {
-            title: habitTitle,
-            quote: isHabitObject ? habit.subtitle : safeBundle.title,
-            description: isHabitObject
-              ? habit.description
-              : `جزء من رحلة: ${safeBundle.title}`,
-            related_days: isHabitObject
-              ? Array.isArray(habit.relatedDays) && habit.relatedDays.length > 0
-                ? habit.relatedDays
-                : [0, 1, 2, 3, 4, 5, 6]
-              : [0, 1, 2, 3, 4, 5, 6],
-            related_salat: isHabitObject
-              ? Array.isArray(habit.relatedSalat) &&
-                habit.relatedSalat.length > 0
-                ? habit.relatedSalat
-                : []
-              : [],
-            category: (safeBundle as any).category || {
-              text: "عام",
-              hexColor: "#8B5CF6",
-            },
-          };
-          return newHabit;
-        }
-      );
-
-      // Create habits in Supabase
-      for (const habit of bundleHabits) {
-        await createHabit(habit);
-      }
-
-      // Show success message
-      Alert.alert(
-        "تم التسجيل بنجاح",
-        `تمت إضافة ${bundleHabits.length} عادات جديدة من "${safeBundle.title}" إلى قائمة عاداتك.`,
-        [
-          {
-            text: "عرض العادات",
-            onPress: () => router.navigate("/(tabs)/(time)"),
-          },
-          {
-            text: "حسنًا",
-            style: "cancel",
-          },
-        ]
-      );
-    } catch (error) {
-      console.error("Error enrolling in bundle:", error);
-      Alert.alert(
-        "خطأ",
-        "حدث خطأ أثناء التسجيل في الرحلة. يرجى المحاولة مرة أخرى."
-      );
-    } finally {
-      setIsEnrolling(false);
-    }
+    router.push({
+      pathname: "/home/bundleCommit/bundleConfirm",
+      params: {
+        bundleData: JSON.stringify(bundle),
+      },
+    });
   };
 
   // Show loading state
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 bg-bg">
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#22C55E" />
-          <Text className="font-ibm-plex-arabic text-text-muted mt-4">
-            جاري التحميل...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // Show error state
   if (error || !safeBundle) {
@@ -604,21 +509,16 @@ const SingleBundleScreen = () => {
         <Pressable
           className="bg-sky-500 rounded-2xl py-5 items-center shadow-lg"
           onPress={handleEnroll}
-          disabled={isEnrolling}
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 12,
-          }}
+          style={shadowStyle({
+            color: "#000",
+            offset: { width: 0, height: 4 },
+            opacity: 0.1,
+            radius: 12,
+          })}
         >
-          {isEnrolling ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text className="text-white font-ibm-plex-arabic-bold text-lg">
-              ابدأ رحلتي
-            </Text>
-          )}
+          <Text className="text-white font-ibm-plex-arabic-bold text-lg">
+            ابدأ رحلتي
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>

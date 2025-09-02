@@ -16,6 +16,11 @@ export interface BundleComment {
   text: string;
 }
 
+export interface UserCommitedBundles {
+  id: string;
+  started_at: string;
+  ends_at: string;
+}
 export interface BundleCategory {
   text: string;
   hexColor: string;
@@ -154,6 +159,52 @@ export const addBundleComment = async (
     }
   } catch (error) {
     console.error("Error in addBundleComment:", error);
+    throw error;
+  }
+};
+
+// ADD bundle to user's commited bundles
+export const addBundleToUserCommitedBundles = async (
+  userId: string,
+  id: string,
+  ends_at: string
+): Promise<void> => {
+  try {
+    // First, get the user's current committed bundles
+    const { data: userData, error: fetchError } = await supabase
+      .from("users")
+      .select("commited_bundles")
+      .eq("id", userId)
+      .single(); // Use single() since we're getting one user
+
+    if (fetchError) {
+      console.error("Error fetching user data:", fetchError);
+      throw fetchError;
+    }
+
+    // Extract the committed bundles array, or initialize as empty array if none exist
+    const currentBundles = userData?.commited_bundles || [];
+
+    // Create the new bundle entry
+    const newBundle = { id, enrolled_at: new Date().toISOString(), ends_at };
+
+    // Add the new bundle to the existing array
+    const updatedBundles = [...currentBundles, newBundle];
+
+    // Update the user's committed bundles
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({ commited_bundles: updatedBundles })
+      .eq("id", userId);
+
+    if (updateError) {
+      console.error("Error updating user's committed bundles:", updateError);
+      throw updateError;
+    }
+
+    console.log("Successfully added bundle to user's committed bundles");
+  } catch (error) {
+    console.error("Error in addBundleToUserCommitedBundles:", error);
     throw error;
   }
 };

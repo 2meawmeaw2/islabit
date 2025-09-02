@@ -5,6 +5,8 @@ export interface User {
   updated_at: string; // ISO timestamp
   commited_bundles: CommittedBundle[];
   commited_habits: CommittedHabit[];
+  best_days: string[];
+  points: number;
 }
 export interface CommittedBundle {
   id: string; // UUID
