@@ -99,6 +99,19 @@ const Header = ({
               <Ionicons name="create-outline" size={22} color="#00AEEF" />
             </Pressable>
             <Pressable
+              onPress={() => {
+                // Navigate to tracking screen
+                router.push({
+                  pathname: "/(tabs)/time/habit-tracking",
+                  params: { habit: JSON.stringify(habit) },
+                });
+              }}
+              style={styles.headerBtn}
+              hitSlop={12}
+            >
+              <Ionicons name="analytics-outline" size={22} color="#10B981" />
+            </Pressable>
+            <Pressable
               onPress={onDelete}
               disabled={isDeleting}
               style={[styles.headerBtn, isDeleting && styles.disabled]}

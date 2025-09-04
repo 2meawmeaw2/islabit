@@ -19,7 +19,7 @@ module.exports = {
         },
 
         // Background colors
-        bg: "#00070A", // Main app background
+        bg: "#00070A", // or 020617
         fore: "#1A1E1F", // Card backgrounds 1a2236
 
         // Text colors

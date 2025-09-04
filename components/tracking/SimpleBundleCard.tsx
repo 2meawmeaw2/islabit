@@ -71,14 +71,14 @@ export const SimpleBundleCard: React.FC<SimpleBundleCardProps> = ({
               />
             </View>
             <Text className="text-text-primary font-ibm-plex-arabic-medium text-lg text-right">
-              {title}
+              bundle color {title}
             </Text>
           </View>
 
           {/* Habit Count Badge */}
           <View className="bg-border-highlight/20 border border-border-highlight/40 rounded-full px-3 py-1">
             <Text className="text-border-highlight font-ibm-plex-arabic-medium text-xs">
-              {habitCount} عادة
+              bundle color {habitCount} عادة
             </Text>
           </View>
         </View>

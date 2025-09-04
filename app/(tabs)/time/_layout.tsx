@@ -13,7 +13,7 @@ export default function TabsLayout() {
         options={{
           title: "الكل",
           headerShown: false,
-          animation: "ios_from_right",
+          animation: "ios_from_left",
         }}
       />
 

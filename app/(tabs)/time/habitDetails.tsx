@@ -1,10 +1,11 @@
-import { HabitDetailsScreen } from "@/components/time/habitDetailsScreen";
+import { HabitTrackingScreen } from "@/components/time/HabitTrackingScreen";
 import { HabitProps } from "@/types/habit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 
-function HabitDetails() {
+function HabitTracking() {
   // Get parameters passed to this screen
   const params = useLocalSearchParams();
   // State to store the habit data
@@ -53,12 +54,23 @@ function HabitDetails() {
   }, []); // Run this effect when params changes
 
   // Show loading state while we get the data
-  if (isLoading) {
-    return <HabitDetailsScreen habit={undefined} />;
+  if (isLoading || !habit) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#020617",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color="#00AEEF" />
+      </View>
+    );
   }
 
-  // Show the habit details once loaded
-  return <HabitDetailsScreen habit={habit} />;
+  // Show the habit tracking screen once loaded
+  return <HabitTrackingScreen habit={habit} />;
 }
 
-export default HabitDetails;
+export default HabitTracking;

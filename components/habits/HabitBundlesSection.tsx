@@ -87,7 +87,7 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
     return (
       <Animated.View entering={FadeInUp.delay(200)} className="w-full px-4">
         <View className="flex-row-reverse items-center justify-between mb-4">
-          <Text className="font-ibm-plex-arabic-semibold text-xl text-text-primary">
+          <Text className="font-ibm-plex-arabic-semibold text-xl text-white">
             حزم العادات
           </Text>
           <Pressable

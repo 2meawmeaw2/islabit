@@ -23,9 +23,12 @@ const OrganizeModes: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const router = useRouter();
 
-  // Function to get date string in YYYY-MM-DD format
+  // Function to get local date string in YYYY-MM-DD format (avoids UTC shift)
   const getDateStr = useCallback((date: Date): string => {
-    return date.toISOString().split("T")[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }, []);
 
   // Type definition for completion record
@@ -43,25 +46,40 @@ const OrganizeModes: React.FC = () => {
       const habitsData = await AsyncStorage.getItem("habits");
       const individualHabits = habitsData ? JSON.parse(habitsData) : [];
 
+      // Add source property to individual habits
+      const processedIndividualHabits = individualHabits.map((habit: any) => ({
+        ...habit,
+        source: "individual",
+      }));
+
       // Load bundle habits
       const bundlesData = await AsyncStorage.getItem("bundles");
       const bundles = bundlesData ? JSON.parse(bundlesData) : [];
 
-      // Extract habits from bundles
-      const bundleHabits = bundles.flatMap((bundle: any) =>
-        (bundle.habits || []).map((habit: any) => ({
+      // Extract habits from bundles with unique IDs
+      const bundleHabits = bundles.flatMap((bundle: any, bundleIndex: number) =>
+        (bundle.habits || []).map((habit: any, habitIndex: number) => ({
           ...habit,
+          // Create unique ID by combining bundle ID and habit ID with index for extra uniqueness
+          id: `bundle_${bundle.id || bundle.title || bundleIndex}_${habit.id || habitIndex}`,
           source: "bundle",
           bundleTitle: bundle.title,
         }))
       );
 
-      // Combine all habits
-      const allHabits = [...individualHabits, ...bundleHabits];
+      // Combine all habits and ensure unique IDs
+      const allHabits = [...processedIndividualHabits, ...bundleHabits];
+
+      // Ensure no duplicate IDs by adding index if needed
+      const uniqueHabits = allHabits.map((habit: any, index: number) => {
+        const existingHabits = allHabits.slice(0, index);
+        const hasDuplicate = existingHabits.some((h: any) => h.id === habit.id);
+        return hasDuplicate ? { ...habit, id: `${habit.id}_${index}` } : habit;
+      });
 
       // Add completion status for the current selected date
       const currentDateStr = getDateStr(selectedDate);
-      const processedHabits = allHabits.map((habit: any) => {
+      const processedHabits = uniqueHabits.map((habit: any) => {
         // Convert old format (string array) to new format (object array) if needed
         if (!habit.completed) {
           habit.completed = [];
@@ -88,6 +106,16 @@ const OrganizeModes: React.FC = () => {
       });
 
       setHabits(processedHabits);
+
+      // Debug: Check for duplicate IDs
+      const ids = processedHabits.map((h: any) => h.id);
+      const duplicateIds = ids.filter(
+        (id: string, index: number) => ids.indexOf(id) !== index
+      );
+      if (duplicateIds.length > 0) {
+        console.warn("Duplicate IDs found:", duplicateIds);
+      }
+      console.log("processedHabits", processedHabits);
     } catch (error) {
       console.error("Error loading habits:", error);
       setHabits([]);
@@ -136,6 +164,7 @@ const OrganizeModes: React.FC = () => {
     async (id: string, completed: boolean, prayerName?: string) => {
       try {
         const selectedDateStr = getDateStr(selectedDate);
+        console.log("selectedDateStr hereeeeeee", selectedDateStr);
         const currentPrayer = prayerName || "unknown";
 
         const updatedHabits = habits.map((habit: any) => {
@@ -189,16 +218,61 @@ const OrganizeModes: React.FC = () => {
           return habit;
         });
 
-        // Save to AsyncStorage without the computed properties
+        // Save to AsyncStorage - separate individual habits from bundle habits
+        const individualHabitsToSave = updatedHabits.filter(
+          (h) => !h.source || h.source === "individual"
+        );
+        const bundleHabitsToSave = updatedHabits.filter(
+          (h) => h.source === "bundle"
+        );
+
+        // Save individual habits
         await AsyncStorage.setItem(
           "habits",
           JSON.stringify(
-            updatedHabits.map((h) => ({
+            individualHabitsToSave.map((h) => ({
               ...h,
               isCompletedForSelectedDay: undefined, // Don't store computed data
             }))
           )
         );
+
+        // Update bundles with their updated habits
+        if (bundleHabitsToSave.length > 0) {
+          const bundlesData = await AsyncStorage.getItem("bundles");
+          const bundles = bundlesData ? JSON.parse(bundlesData) : [];
+
+          const updatedBundles = bundles.map((bundle: any) => {
+            const bundleHabits = bundleHabitsToSave.filter((h) =>
+              h.id.startsWith(`bundle_${bundle.id || bundle.title}_`)
+            );
+
+            if (bundleHabits.length > 0) {
+              // Update the habits in this bundle
+              const updatedBundleHabits = bundle.habits.map((habit: any) => {
+                const updatedHabit = bundleHabits.find(
+                  (h) =>
+                    h.id === `bundle_${bundle.id || bundle.title}_${habit.id}`
+                );
+                return updatedHabit
+                  ? {
+                      ...habit,
+                      completed: updatedHabit.completed,
+                      streak: updatedHabit.streak,
+                    }
+                  : habit;
+              });
+
+              return {
+                ...bundle,
+                habits: updatedBundleHabits,
+              };
+            }
+            return bundle;
+          });
+
+          await AsyncStorage.setItem("bundles", JSON.stringify(updatedBundles));
+        }
 
         setHabits(updatedHabits);
       } catch (error) {

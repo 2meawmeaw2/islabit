@@ -44,8 +44,15 @@ const SingleBundleScreen = () => {
   // Parse bundle data from params
   useEffect(() => {
     if (bundleData) {
-      const parsedBundle = JSON.parse(bundleData) as Bundle;
-      setBundle(parsedBundle);
+      try {
+        const parsedBundle = JSON.parse(bundleData) as Bundle;
+        setBundle(parsedBundle);
+      } catch (parseError) {
+        console.error("Error parsing bundle data:", parseError);
+        setError("خطأ في تحليل بيانات الحزمة");
+      }
+    } else {
+      setError("لم يتم العثور على بيانات الحزمة");
     }
   }, [bundleData]);
   // Safety check - if no bundle found at all, redirect to home
@@ -360,7 +367,7 @@ const SingleBundleScreen = () => {
                                 <>
                                   {isRelated && (
                                     <View
-                                      key={day}
+                                      key={index}
                                       className={`px-2 py-1 rounded-full items-center justify-center `}
                                     >
                                       <Text
@@ -465,7 +472,7 @@ const SingleBundleScreen = () => {
             <View className="gap-3">
               {comments.map((c, idx) => (
                 <Animated.View
-                  key={c.id}
+                  key={idx}
                   entering={FadeInUp.delay(1100 + idx * 100).duration(600)}
                   className="bg-fore rounded-2xl p-4 border border-white/10 shadow-sm"
                 >

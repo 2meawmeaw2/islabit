@@ -4,6 +4,7 @@ import { supabase } from "@/utils/supabase";
 import * as WebBrowser from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 
 // Types
 export interface AuthContextType {
@@ -132,19 +133,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Starting Google OAuth flow...");
 
-      // Create the redirect URI for OAuth
-      const redirectUri = makeRedirectUri({
-        scheme: "myapp",
-        path: "auth/callback",
-      });
-
-      console.log("Redirect URI:", redirectUri);
-
-      // Start OAuth flow with Supabase
+      // For development, we need to use a different approach
+      // Instead of relying on redirects, we'll use the OAuth session directly
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: redirectUri,
+          // Don't specify redirectTo in development - let Supabase handle it
           queryParams: {
             access_type: "offline",
             prompt: "consent",
@@ -174,7 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Open the OAuth URL in browser
         const result = await WebBrowser.openAuthSessionAsync(
           data.url,
-          redirectUri
+          // Use a simple redirect that will work in development
+          "myapp://auth/callback"
         );
 
         console.log("OAuth result:", result);
@@ -182,7 +177,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (result.type === "success") {
           // Handle successful authentication
           console.log("Google OAuth successful");
-          return { error: null };
+
+          // The session should be automatically handled by Supabase
+          // Let's check if we have a session now
+          const { data: sessionData, error: sessionError } =
+            await supabase.auth.getSession();
+
+          if (sessionError) {
+            console.error("Session error after OAuth:", sessionError);
+            return { error: sessionError };
+          }
+
+          if (sessionData.session) {
+            console.log(
+              "Session established successfully:",
+              sessionData.session.user?.email
+            );
+            return { error: null };
+          } else {
+            console.log("No session found after OAuth");
+            return {
+              error: {
+                message: "No session established after OAuth",
+              } as AuthError,
+            };
+          }
         } else if (result.type === "cancel") {
           console.log("Google OAuth cancelled by user");
           return {

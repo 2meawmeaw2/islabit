@@ -50,6 +50,9 @@ type Props = {
 
 // Priority indicator function removed - no longer needed
 
+// Note: Layout animations and style animations are separated to avoid Reanimated conflicts.
+// Outer Animated.View handles layout animations, inner Animated.View handles style animations.
+
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const SalatHabitsDisplay: React.FC<Props> = memo(
@@ -188,34 +191,38 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
                   layout={Layout.springify()}
                   entering={FadeIn.duration(200)}
                   exiting={FadeOut.duration(200)}
-                  style={progressAnimatedStyle}
                   className="items-center justify-center"
                 >
-                  <PercentageCircle
-                    showLabel={false}
-                    size={32}
-                    strokeWidth={4}
-                    percentage={Math.round(completionPercentage)}
-                    colors={["#4ADE80", "#FACC15", "#00AEEF"]}
-                    trackColor={allCompleted ? "#4B9AB5" : "#334155"}
-                    backgroundColor="transparent"
-                    roundedCaps
-                    durationMs={reducedMotion ? 0 : 600}
-                  />
+                  <Animated.View style={progressAnimatedStyle}>
+                    <PercentageCircle
+                      showLabel={false}
+                      size={32}
+                      strokeWidth={4}
+                      percentage={Math.round(completionPercentage)}
+                      colors={["#4ADE80", "#FACC15", "#00AEEF"]}
+                      trackColor={allCompleted ? "#4B9AB5" : "#334155"}
+                      backgroundColor="transparent"
+                      roundedCaps
+                      durationMs={reducedMotion ? 0 : 600}
+                    />
+                  </Animated.View>
                 </Animated.View>
               )}
 
-              <AnimatedPressable
+              <Animated.View
                 entering={FadeInLeft.duration(300)}
                 exiting={FadeOutLeft.duration(300)}
-                onPress={toggleCollapse}
-                style={chevronAnimatedStyle}
                 className="p-2 items-center justify-center"
-                accessibilityLabel="طي القائمة"
-                accessibilityRole="button"
               >
-                <Ionicons name="chevron-down" size={16} color="#6C7684" />
-              </AnimatedPressable>
+                <AnimatedPressable
+                  onPress={toggleCollapse}
+                  style={chevronAnimatedStyle}
+                  accessibilityLabel="طي القائمة"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="chevron-down" size={16} color="#6C7684" />
+                </AnimatedPressable>
+              </Animated.View>
             </View>
           </View>
         </AnimatedPressable>
@@ -430,6 +437,22 @@ const HabitItem: React.FC<{
   const checkAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: checkScale.value }],
   }));
+
+  // Create animated styles for the completion states to avoid reading shared values during render
+  const completedCheckAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: isCompletedAnimation.value,
+  }));
+
+  const uncompletedCheckAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: isCompletedAnimation.value === 1 ? 0 : 1,
+  }));
+
+  const textAnimatedStyle = useAnimatedStyle(() => ({
+    color: isCompletedAnimation.value === 1 ? "#9CA3AF" : "#FFFFFF",
+    textDecorationLine:
+      isCompletedAnimation.value === 1 ? "line-through" : "none",
+  }));
+
   // Removed separate opacity state effect; opacity now solely derives from the shared value above
 
   return (
@@ -453,10 +476,12 @@ const HabitItem: React.FC<{
           ? undefined
           : LinearTransition.springify().mass(0.8).damping(25).stiffness(80)
       }
-      style={[animatedStyle, { marginBottom: 10 }]}
       className="mb-10 last:mb-0"
     >
-      <Animated.View className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-xl p-4 shadow-lg border border-slate-600/30">
+      <Animated.View
+        style={[animatedStyle, { marginBottom: 10 }]}
+        className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-xl p-4 shadow-lg border border-slate-600/30"
+      >
         {/* Enhanced Toggle Button with better animations */}
         <AnimatedPressable
           onPress={handleToggle}
@@ -466,24 +491,25 @@ const HabitItem: React.FC<{
           accessibilityLabel="تبديل حالة الإكمال"
         >
           <Animated.View
-            style={{ opacity: isCompletedAnimation }}
+            style={completedCheckAnimatedStyle}
             className="absolute items-center justify-center"
           >
             <Animated.View
-              style={checkAnimatedStyle}
               entering={FadeIn.duration(400).easing(
                 Easing.bezier(0.25, 0.46, 0.45, 0.94)
               )}
               className="items-center justify-center"
             >
-              <View className="w-6 h-6 rounded-full bg-green-400 items-center justify-center shadow-sm">
-                <Text className="text-slate-900 text-sm font-bold">✓</Text>
-              </View>
+              <Animated.View style={checkAnimatedStyle}>
+                <View className="w-6 h-6 rounded-full bg-green-400 items-center justify-center shadow-sm">
+                  <Text className="text-slate-900 text-sm font-bold">✓</Text>
+                </View>
+              </Animated.View>
             </Animated.View>
           </Animated.View>
 
           <Animated.View
-            style={{ opacity: isCompletedAnimation.value === 1 ? 0 : 1 }}
+            style={uncompletedCheckAnimatedStyle}
             className="absolute items-center justify-center"
           >
             <Animated.View
@@ -501,47 +527,47 @@ const HabitItem: React.FC<{
         </AnimatedPressable>
 
         {/* Clean Habit Content with smooth transitions */}
-        <AnimatedPressable
-          onPress={() => console.log(`Habit tapped: ${habit.id}`)} // Safe no-op handler
-          className="flex-1"
-          accessibilityRole="button"
-          accessibilityLabel={`${habit.title} - ${isCompletedToday ? "مكتمل" : "غير مكتمل"}`}
+        <Animated.View
           layout={LinearTransition.springify()
             .mass(0.6)
             .damping(30)
             .stiffness(100)}
+          className="flex-1"
         >
-          <View className="flex-row-reverse items-center mb-1 ">
-            <Animated.Text
-              className={`font-ibm-plex-arabic-medium text-base flex-1 text-right py-2`}
-              style={{
-                color: isCompletedAnimation.value === 1 ? "#9CA3AF" : "#FFFFFF",
-                textDecorationLine:
-                  isCompletedAnimation.value === 1 ? "line-through" : "none",
-              }}
-              numberOfLines={1}
-            >
-              {habit.title}
-            </Animated.Text>
+          <AnimatedPressable
+            onPress={() => onPress(habit)} // Navigate to tracking screen
+            className="flex-1"
+            accessibilityRole="button"
+            accessibilityLabel={`${habit.title} - ${isCompletedToday ? "مكتمل" : "غير مكتمل"}`}
+          >
+            <View className="flex-row-reverse items-center mb-1 ">
+              <Animated.Text
+                className="font-ibm-plex-arabic-medium text-base flex-1 text-right py-2"
+                style={textAnimatedStyle}
+                numberOfLines={1}
+              >
+                {habit.title}
+              </Animated.Text>
 
-            {/* Bundle Indicator */}
-            {habit.source === "bundle" && habit.category && (
-              <View className="ml-2 flex-row items-center">
-                <View className="bg-sky-500/20 px-2 py-1 rounded-full">
-                  <Text
-                    style={{
-                      color: habit.category.hexColor || "#22C55E",
-                      fontSize: 10,
-                    }}
-                    className="text-xs text-sky-400 font-ibm-plex-arabic-medium"
-                  >
-                    {habit.bundleTitle}
-                  </Text>
+              {/* Bundle Indicator */}
+              {habit.source === "bundle" && habit.category && (
+                <View className="ml-2 flex-row items-center">
+                  <View className="bg-sky-500/20 px-2 py-1 rounded-full">
+                    <Text
+                      style={{
+                        color: habit.category.hexColor || "#22C55E",
+                        fontSize: 10,
+                      }}
+                      className="text-xs text-sky-400 font-ibm-plex-arabic-medium"
+                    >
+                      {habit.bundleTitle}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            )}
-          </View>
-        </AnimatedPressable>
+              )}
+            </View>
+          </AnimatedPressable>
+        </Animated.View>
 
         {/* Simple Arrow with subtle animation */}
         <Pressable onPress={() => onPress(habit)}>
