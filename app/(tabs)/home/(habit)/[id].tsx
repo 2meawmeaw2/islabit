@@ -1,17 +1,16 @@
 // app/habit-details/[id].tsx
-import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Switch, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { fetchHabitById } from "@/lib/habits-api";
-import { HabitFromAPI } from "@/lib/habits-api";
+import { HabitFromAPI, fetchHabitById } from "@/lib/habits-api";
+import { useHabitsStore } from "@/store/habitsStore";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
-  Easing,
   withTiming,
 } from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const HabitDetails = () => {
   const router = useRouter();
@@ -20,9 +19,35 @@ const HabitDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Get habits from store
+  const habits = useHabitsStore((state) => state.habits);
+
   useEffect(() => {
     const loadHabit = async () => {
       if (!id) return;
+
+      // First check if we have the habit in the store
+      const storedHabit = habits.find((h) => h.id === id);
+
+      if (storedHabit) {
+        // Convert back to API format if needed
+        const apiHabit: HabitFromAPI = {
+          id: storedHabit.id,
+          title: storedHabit.title,
+          quote: storedHabit.quote || undefined,
+          description: storedHabit.whyDescription || undefined,
+          related_days: storedHabit.suggestedRelatedDays?.map(Number) || [],
+          related_salat:
+            storedHabit.suggestedRelatedSalat?.map((s) => s.key) || [],
+          category: storedHabit.categories[0],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        setHabit(apiHabit);
+        setIsLoading(false);
+        return;
+      }
 
       try {
         setIsLoading(true);
@@ -37,7 +62,7 @@ const HabitDetails = () => {
     };
 
     loadHabit();
-  }, [id]);
+  }, [id, habits]);
 
   if (isLoading) {
     return (

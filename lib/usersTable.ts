@@ -1,12 +1,11 @@
 // lib/users.ts
-import { supabase } from "@/utils/supabase";
 import { useUserStore } from "@/store/userStore";
 import type { User } from "@/types/user";
-
+import { supabase } from "@/utils/supabase";
 // Adjust table name/columns to your schema
 const TABLE = "users";
 
-export async function loadUserById(userId: string) {
+export async function loadUserById(userId: string): Promise<User> {
   const { data, error } = await supabase
     .from(TABLE)
     .select("*")
@@ -14,6 +13,6 @@ export async function loadUserById(userId: string) {
     .single();
 
   if (error) throw error;
-  useUserStore.getState().setProfile(data as User);
+  useUserStore.setState({ profile: data as User });
   return data as User;
 }

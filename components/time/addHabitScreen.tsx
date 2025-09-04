@@ -71,6 +71,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
       quote: quote.trim() || undefined,
       description: description.trim() || undefined,
       streak: 0,
+      bestStreak: 0,
       completed: [], // no days completed yet
       relatedDays: [...selectedDays].sort((a, b) => a - b),
       relatedSalat: [...salat],

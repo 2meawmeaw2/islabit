@@ -191,6 +191,7 @@ const BundleConfirmationScreen = () => {
             },
             completed: [], // Initialize empty completion array
             streak: 0, // Initialize streak
+            bestStreak: 0,
           };
           addBundleToUserCommitedBundles(
             user?.user?.id ?? "",

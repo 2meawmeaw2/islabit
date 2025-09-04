@@ -1,3 +1,5 @@
+import { AuthProvider } from "@/lib/auth";
+import { useHabitInitialization } from "@/lib/useHabitInitialization";
 import {
   // Thin (100)
   IBMPlexSansArabic_100Thin,
@@ -21,14 +23,23 @@ import {
   IBMPlexSansArabic_700Bold,
   useFonts,
 } from "@expo-google-fonts/ibm-plex-sans-arabic";
-import { SplashScreen, Stack } from "expo-router";
-import { useEffect } from "react";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import React, { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth";
+
+export {
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary,
+} from "expo-router";
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    // Thin (100)
+  const [loaded, error] = useFonts({
+    // SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     IBMPlexSansArabic_100Thin,
 
     // ExtraLight (200)
@@ -50,31 +61,51 @@ export default function RootLayout() {
     IBMPlexSansArabic_700Bold,
   });
 
+  // Initialize our habit store from AsyncStorage
+  const { isLoading: isHabitLoading, isHydrated } = useHabitInitialization();
+  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
-    if (fontsLoaded) {
+    if (error) throw error;
+  }, [error]);
+
+  useEffect(() => {
+    if (loaded && isHydrated) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [loaded, isHydrated]);
 
-  return (
-    <AuthProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: "fade", // ← make pushes slide, not fade
-          gestureEnabled: true,
-
-          contentStyle: {
-            backgroundColor: "#00070A",
-          },
+  if (!loaded || !isHydrated) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#020617",
         }}
       >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="sign" />
-        <Stack.Screen name="moreInfo" />
-        <Stack.Screen name="forgot-password" />
-        <Stack.Screen name="email-confirmation" />
-        <Stack.Screen name="test-auth" />
+        <ActivityIndicator size="large" color="#00AEEF" />
+      </View>
+    );
+  }
+
+  return <RootLayoutNav />;
+}
+
+function RootLayoutNav() {
+  return (
+    <AuthProvider>
+      <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="sign" options={{ headerShown: false }} />
+        <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+        <Stack.Screen name="moreInfo" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="auth/reset-password"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
     </AuthProvider>
   );

@@ -1,5 +1,6 @@
-import { supabase } from "@/utils/supabase";
 import { HabitProps, HabitsShopHabit } from "@/types/habit";
+import { PrayerKey } from "@/types/salat";
+import { supabase } from "@/utils/supabase";
 
 // Type definitions for habits API
 export interface HabitFromAPI {
@@ -17,7 +18,7 @@ export interface HabitFromAPI {
   updated_at: string;
 }
 
-// Convert API habit to local habit format
+// Convert API habit to local habit format for shop/explore
 export const convertApiHabitToLocal = (
   apiHabit: HabitFromAPI
 ): HabitsShopHabit => {
@@ -37,6 +38,22 @@ export const convertApiHabitToLocal = (
       (day) => day.toString() as any
     ),
     categories: [apiHabit.category],
+  };
+};
+
+// Convert API habit to HabitProps for store usage
+export const convertApiHabitToStore = (apiHabit: HabitFromAPI): HabitProps => {
+  return {
+    id: apiHabit.id,
+    title: apiHabit.title,
+    quote: apiHabit.quote,
+    description: apiHabit.description,
+    streak: 0, // Default streak for new habits
+    bestStreak: 0, // Default best streak
+    completedDates: [], // Initialize empty completed dates
+    relatedSalat: (apiHabit.related_salat || []) as PrayerKey[],
+    relatedDays: apiHabit.related_days || [],
+    category: apiHabit.category,
   };
 };
 

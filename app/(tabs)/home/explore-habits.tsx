@@ -1,21 +1,22 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
+import { convertApiHabitToLocal, fetchAllHabits } from "@/lib/habits-api";
+import { useHabitsStore } from "@/store/habitsStore";
+import { Category, DEFAULT_CATEGORIES } from "@/types/habit";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { Category, DEFAULT_CATEGORIES } from "@/types/habit";
-import { useExploreHabits } from "@/lib/use-explore-habits";
+import { StatusBar } from "expo-status-bar";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import Animated, {
-  FadeInUp,
-  FadeInLeft,
-  FadeInDown,
-  FadeOut,
   FadeIn,
-  LinearTransition,
+  FadeInDown,
+  FadeInLeft,
   FadeInRight,
+  FadeInUp,
+  FadeOut,
+  LinearTransition,
 } from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const ExploreHabits = () => {
   const { category: initialCategory } = useLocalSearchParams<{
@@ -26,9 +27,33 @@ const ExploreHabits = () => {
     initialCategory || null
   );
   const scrollViewRef = useRef<ScrollView>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch habits from Supabase
-  const { habits, isLoading, error } = useExploreHabits();
+  // Get habits directly from the store
+  const habits = useHabitsStore((state) => state.habits);
+  const setHabits = useHabitsStore((state) => state.setHabits);
+
+  // Fetch habits if not in store
+  useEffect(() => {
+    const fetchHabits = async () => {
+      if (habits.length > 0) return; // Skip if we already have habits
+
+      try {
+        setIsLoading(true);
+        const habitsData = await fetchAllHabits();
+        const localHabits = habitsData.map(convertApiHabitToLocal);
+        setHabits(localHabits);
+      } catch (err) {
+        console.error("Error loading habits:", err);
+        setError("حدث خطأ في تحميل البيانات. يرجى المحاولة مرة أخرى.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHabits();
+  }, [habits.length, setHabits]);
   // Filter habits based on search and category
   const filteredHabits = useMemo(() => {
     let filtered = habits;

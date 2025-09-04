@@ -1,19 +1,17 @@
-import HabitBundlesSection from "@/components/habits/HabitBundlesSection";
-import TrendingSection from "@/components/habits/TrendingSection";
-import { Ionicons } from "@expo/vector-icons";
-import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import HabitTypesSection from "@/components/habits/HabitTypesSection";
-import { useHomeData } from "@/lib/use-home-data";
 import SvgHomeBg from "@/assets/images/svg-home-bg.svg";
+import HabitBundlesSection from "@/components/habits/HabitBundlesSection";
+import HabitTypesSection from "@/components/habits/HabitTypesSection";
+import TrendingSection from "@/components/habits/TrendingSection";
+import { useHomeData } from "@/lib/use-home-data";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 const AllHabits = () => {
   // Use centralized data fetching hook
   const { bundles, trendingHabits, isLoading, error, refetch } = useHomeData();
-  console.log("trendingHabits", trendingHabits);
-  console.log("bundles", bundles);
   const handleHabitTypePress = (typeId: string) => {
     // Navigate to explore habits page with category filter
     router.push({
@@ -24,11 +22,6 @@ const AllHabits = () => {
 
   const handleBundlePress = (bundle: any) => {
     // Serialize the bundle object to JSON string
-    console.log("this is the bundle that will get passed", bundle);
-    console.log(
-      "this is the bundle that will get passed as JSON string",
-      JSON.stringify(bundle)
-    );
     router.push({
       pathname: "/(tabs)/home/bundleCommit",
       params: {

@@ -1,4 +1,5 @@
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import { useUserStore } from "@/store/userStore";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -7,20 +8,20 @@ import {
   useWindowDimensions,
 } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  Easing,
 } from "react-native-reanimated";
-import HabitsTrackingPlaceholder from "./habits";
 import BundleTrackingPlaceholder from "./bundle";
-import { useUserStore } from "@/store/userStore";
+import HabitsTrackingPlaceholder from "./habits";
 export default function TrackingChoiceScreen() {
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const topScrollRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-
+  const profile = useUserStore.getState().profile;
+  console.log("profile in tracking index", profile);
   // Animated segmented control shared values
   const segmentW = useSharedValue(0);
   const translateX = useSharedValue(0);
@@ -50,12 +51,10 @@ export default function TrackingChoiceScreen() {
     },
     [activeIndex, width]
   );
-
-  // On mount, scroll the top horizontal ScrollView to the end
   useEffect(() => {
-    requestAnimationFrame(() => {
-      topScrollRef.current?.scrollToEnd({ animated: false });
-    });
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollToEnd({ animated: false });
+    }
   }, []);
 
   // Keep pill in sync if activeIndex changes from scroll
@@ -70,7 +69,6 @@ export default function TrackingChoiceScreen() {
     width: segmentW.value,
     transform: [{ translateX: translateX.value }],
   }));
-  console.log(useUserStore.getState().profile);
   return (
     <View className="flex-1 bg-bg">
       <View className="px-4 pt-4 pb-2">
@@ -78,7 +76,11 @@ export default function TrackingChoiceScreen() {
           التتبع
         </Text>
 
-        <ScrollView ref={topScrollRef} horizontal>
+        <ScrollView
+          ref={topScrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+        >
           <View
             style={{ width: 120, height: 120, backgroundColor: "#2563EB" }}
             className="justify-center items-center px-4 py-6 rounded-3xl mx-3"

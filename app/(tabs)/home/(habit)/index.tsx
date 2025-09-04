@@ -1,26 +1,34 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { fetchAllHabits, convertApiHabitToLocal } from "@/lib/habits-api";
-import { HabitsShopHabit } from "@/types/habit";
+import { convertApiHabitToStore, fetchAllHabits } from "@/lib/habits-api";
+import { useHabitsStore } from "@/store/habitsStore";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const HabitIndex = () => {
   const router = useRouter();
-  const [habits, setHabits] = useState<HabitsShopHabit[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Use the habits from the store
+  const habits = useHabitsStore((state) => state.habits);
+  const setHabitsInStore = useHabitsStore((state) => state.setHabits);
+
   useEffect(() => {
     const loadHabits = async () => {
+      // If we already have habits in the store, don't fetch again
+      if (habits.length > 0) {
+        return;
+      }
+
       try {
         setIsLoading(true);
         const habitsData = await fetchAllHabits();
-        const localHabits = habitsData.map(convertApiHabitToLocal);
-        setHabits(localHabits);
+        const localHabits = habitsData.map(convertApiHabitToStore);
+        setHabitsInStore(localHabits);
       } catch (err) {
         console.error("Error loading habits:", err);
         setError("حدث خطأ في تحميل العادات");
@@ -30,12 +38,12 @@ const HabitIndex = () => {
     };
 
     loadHabits();
-  }, []);
+  }, [habits.length, setHabitsInStore]);
 
   const filteredHabits = habits.filter(
     (habit) =>
       habit.title.includes(searchQuery) ||
-      habit.whyDescription.includes(searchQuery)
+      (habit.description && habit.description.includes(searchQuery))
   );
 
   const handleHabitPress = (habitId: string) => {
@@ -150,7 +158,7 @@ const HabitIndex = () => {
                             {habit.title}
                           </Text>
                           <Text className="font-ibm-plex-arabic text-sm text-text-muted text-right leading-5">
-                            {habit.whyDescription}
+                            {habit.description}
                           </Text>
                         </View>
                       </View>

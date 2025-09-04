@@ -1,11 +1,10 @@
-import { PRAYERS, COLORS as PRAYER_COLORS } from "@/lib/prayers";
+import { PRAYERS } from "@/lib/prayers";
 import { HabitDay, HabitProps } from "@/types/habit";
 import { PrayerKey } from "@/types/salat";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import {
-  Dimensions,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -16,11 +15,8 @@ import {
 import Animated, {
   useAnimatedStyle,
   withSpring,
-  withTiming,
 } from "react-native-reanimated";
-import ArabicHabitCalendar from "../tracking/monthCalendar";
-
-const { width: screenWidth } = Dimensions.get("window");
+import HabitCalendar from "../tracking/habitCalendar";
 
 // Arabic day names
 const DAY_NAMES = [
@@ -108,10 +104,10 @@ const ProgressCircle = ({ percentage }: { percentage: number }) => {
           ]}
         />
         <View style={styles.progressCenter}>
-          <Text className="text-white font-ibm-plex-arabic-bold text-3xl">
+          <Text className="text-text-primary font-ibm-plex-arabic-bold text-3xl">
             {Math.round(percentage)}%
           </Text>
-          <Text className="text-slate-400 font-ibm-plex-arabic-medium text-sm">
+          <Text className="text-text-primary font-ibm-plex-arabic-medium text-sm">
             مكتمل
           </Text>
         </View>
@@ -357,11 +353,15 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
         </View>
 
         <View style={styles.calendarContainer}>
-          <ArabicHabitCalendar
-            variant="embedded"
-            completedDates={completedDatesForCalendar}
-            shouldDoOnWeekdays={habit.relatedDays}
-          />
+          {/* Using the new HabitCalendar with Zustand integration */}
+          {habit.id && (
+            <HabitCalendar
+              variant="embedded"
+              habitId={habit.id}
+              completedDates={completedDatesForCalendar}
+              shouldDoOnWeekdays={habit.relatedDays}
+            />
+          )}
         </View>
 
         <View style={{ height: 24 }} />

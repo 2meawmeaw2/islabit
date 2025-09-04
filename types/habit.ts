@@ -1,7 +1,7 @@
 // Let's start by defining a TypeScript type for the habit props you described.
 // We'll use an interface to clearly specify each property and its type.
+import { WeekDayAr } from "./dates";
 import { PrayerKey } from "./salat";
-import { WeekDayAr, WEEK_DAYS } from "./dates";
 
 // New Category interface for habits and bundles
 export interface Category {
@@ -21,16 +21,24 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { text: "رياضة", hexColor: "#059669" }, // Sports - Emerald
 ];
 
+// Type for completion record with prayer information
+export interface CompletionRecord {
+  date: string;
+  prayer: string;
+}
+
 export interface HabitProps {
   id: string; // Unique identifier for the habit
   title: string; // Name or title of the habit
   quote?: string; // Motivational or related quote
   description?: string; // Description of the habit
   streak: number; // Current streak count
-  completed: string[]; // Array of days (e.g., ["2024-06-01", "2024-06-02"]) when the habit was completed
+  bestStreak?: number; // Best (longest) streak achieved
+  completed?: string[] | CompletionRecord[]; // Array of days when habit was completed (legacy: string[], new: CompletionRecord[])
+  completedDates?: string[]; // Array of dates in ISO format when the habit was completed (e.g., ["2024-06-01", "2024-06-02"])
   relatedSalat: PrayerKey[]; // (Optional) Name of the related prayer, if any
   relatedDays: number[]; // (Optional) Days of the week related to the habit (e.g., ["Monday", "Thursday"])
-  category: Category; // New: Category for the habit
+  category?: Category; // Category for the habit
 }
 
 export interface HabitsShopHabit {

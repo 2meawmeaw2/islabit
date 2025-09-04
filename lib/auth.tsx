@@ -1,10 +1,8 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
-import { Session, User, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase";
-import * as WebBrowser from "expo-web-browser";
+import { AuthError, Session, User } from "@supabase/supabase-js";
 import { makeRedirectUri } from "expo-auth-session";
-import { Platform } from "react-native";
-import Constants from "expo-constants";
+import * as WebBrowser from "expo-web-browser";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 // Types
 export interface AuthContextType {
@@ -138,7 +136,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          // Don't specify redirectTo in development - let Supabase handle it
           queryParams: {
             access_type: "offline",
             prompt: "consent",

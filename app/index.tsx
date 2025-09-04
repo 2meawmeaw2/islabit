@@ -1,8 +1,9 @@
+import { useAuth } from "@/lib/auth";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
-import { Pressable, Text, TouchableOpacity, View, Alert } from "react-native";
+import { Alert, Pressable, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -10,7 +11,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "@/lib/auth";
 
 const WelcomeMinimalUI: React.FC = ({}) => {
   const router = useRouter();

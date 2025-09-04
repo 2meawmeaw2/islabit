@@ -1,6 +1,8 @@
+import { useHabitsStore } from "@/store/habitsStore";
+import type { HabitProps } from "@/types/habit";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { View, Text, Pressable, useWindowDimensions } from "react-native";
+import { Pressable, Text, View, useWindowDimensions } from "react-native";
 
 const BG_COLOR = "#00070A";
 const CALENDAR_BG = "#18181A";
@@ -44,27 +46,46 @@ const toArabicNumerals = (num: number): string => {
 };
 
 // Helper to format date to "YYYY-MM-DD"
-const toDateString = (year: number, month: number, day: number) =>
-  `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+const toDateString = (year: number, month: number, day: number): string =>
+  `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
+    2,
+    "0"
+  )}`;
 
 type CalendarVariant = "standalone" | "embedded";
 
-type ArabicHabitCalendarProps = {
+type HabitCalendarProps = {
   variant?: CalendarVariant;
-  completedDates?: string[]; // ISO strings YYYY-MM-DD considered completed for the month view
+  habitId: string; // The ID of the habit to track
+  completedDates?: string[]; // Optional initial completed dates
   // Weekday schedule: Sunday = 0 … Saturday = 6 (Sunday-first calendar)
   shouldDoOnWeekdays?: number[];
+  readonly?: boolean; // If true, the user can't toggle dates
 };
 
-const ArabicHabitCalendar: React.FC<ArabicHabitCalendarProps> = ({
+const HabitCalendar: React.FC<HabitCalendarProps> = ({
   variant = "standalone",
+  habitId,
   completedDates = [],
   shouldDoOnWeekdays,
+  readonly = false,
 }) => {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 8, 2)); // Sep 2025 for demo
+  // Get today's date for default current view
+  const todayDate = new Date();
 
-  // Accept completion from parent; keep no local demo state in production
-  const [completedDayStrings] = useState<string[]>(completedDates);
+  // Current date for calendar navigation
+  const [currentDate, setCurrentDate] = useState<Date>(todayDate);
+
+  // Connect to habit store
+  const completeHabit = useHabitsStore((state) => state.completeHabit);
+  const habits = useHabitsStore((state) => state.habits);
+  const habit: HabitProps | undefined = habits.find((h) => h.id === habitId);
+
+  // Get completed dates from the store or props
+  const storedCompletedDates: string[] = habit?.completedDates || [];
+  const allCompletedDates: string[] = [
+    ...new Set([...completedDates, ...storedCompletedDates]),
+  ];
 
   // Responsive width
   const { width: windowWidth } = useWindowDimensions();
@@ -106,7 +127,22 @@ const ArabicHabitCalendar: React.FC<ArabicHabitCalendarProps> = ({
     return days;
   };
 
-  const navigateMonth = (direction: number) => {
+  // Handle toggling completion for a specific day
+  const toggleCompletion = (day: number): void => {
+    if (readonly || !day) return;
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const dateStr = toDateString(year, month, day);
+
+    // Check if the day is already completed
+    const isCompleted = allCompletedDates.includes(dateStr);
+
+    // Toggle completion by updating the store
+    completeHabit(habitId, dateStr, !isCompleted);
+  };
+
+  const navigateMonth = (direction: number): void => {
     const newDate = new Date(currentDate);
     newDate.setMonth(currentDate.getMonth() + direction);
     setCurrentDate(newDate);
@@ -119,23 +155,29 @@ const ArabicHabitCalendar: React.FC<ArabicHabitCalendarProps> = ({
 
   // Today logic for blue ring
   const today = new Date();
-  const isToday = (day: number | null) =>
-    day &&
-    day === today.getDate() &&
-    today.getMonth() === currentDate.getMonth() &&
-    today.getFullYear() === currentDate.getFullYear();
+  const isToday = (day: number | null): boolean =>
+    !!(
+      day &&
+      day === today.getDate() &&
+      today.getMonth() === currentDate.getMonth() &&
+      today.getFullYear() === currentDate.getFullYear()
+    );
 
   // For marking completed days
-  const isCompleted = (day: number | null) => {
+  const isCompleted = (day: number | null): boolean => {
     if (!day) return false;
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const dateStr = toDateString(year, month, day);
-    return completedDayStrings.includes(dateStr);
+    return allCompletedDates.includes(dateStr);
   };
 
   // Compute Sunday-first weekday index for a specific date (0 = Sunday … 6 = Saturday)
-  const getSundayFirstWeekday = (year: number, month: number, day: number) => {
+  const getSundayFirstWeekday = (
+    year: number,
+    month: number,
+    day: number
+  ): number => {
     return new Date(year, month, day).getDay();
   };
 
@@ -250,7 +292,7 @@ const ArabicHabitCalendar: React.FC<ArabicHabitCalendarProps> = ({
                   fontWeight: "500",
                   letterSpacing: 1,
                 }}
-                className="font-ibm-plex-arabic-medium  text-md"
+                className="font-ibm-plex-arabic-medium text-md"
               >
                 {dayName}
               </Text>
@@ -307,7 +349,8 @@ const ArabicHabitCalendar: React.FC<ArabicHabitCalendarProps> = ({
               >
                 {day ? (
                   <Pressable
-                    disabled
+                    onPress={() => !readonly && toggleCompletion(day)}
+                    disabled={readonly}
                     style={{
                       width: DAY_SIZE - 4,
                       height: DAY_SIZE - 4,
@@ -359,4 +402,4 @@ const ArabicHabitCalendar: React.FC<ArabicHabitCalendarProps> = ({
   );
 };
 
-export default ArabicHabitCalendar;
+export default HabitCalendar;
