@@ -1,4 +1,4 @@
-import { PRAYERS } from "@/lib/prayers";
+import { PRAYERS } from "@/assets/constants/prayers";
 import { HabitDay, HabitProps } from "@/types/habit";
 import { PrayerKey } from "@/types/salat";
 import { Ionicons } from "@expo/vector-icons";
@@ -210,7 +210,7 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
   habit,
 }) => {
   const router = useRouter();
-
+  console.log(habit);
   type CompletionRecord = { date: string; prayer?: string };
 
   const completedDatesForCalendar = useMemo(() => {
@@ -261,59 +261,19 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
       100
     );
 
-    // Calculate best streak
-    let bestStreak = 0;
-    let currentStreak = 0;
-
-    if (habit.completed && habit.completed.length > 0) {
-      // Sort completed dates
-      const sortedDates = [...habit.completed].sort();
-      let tempStreak = 1;
-
-      for (let i = 1; i < sortedDates.length; i++) {
-        const prevDate = new Date(sortedDates[i - 1]);
-        const currDate = new Date(sortedDates[i]);
-        const diffTime = currDate.getTime() - prevDate.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 1) {
-          tempStreak++;
-        } else {
-          bestStreak = Math.max(bestStreak, tempStreak);
-          tempStreak = 1;
-        }
-      }
-      bestStreak = Math.max(bestStreak, tempStreak);
-
-      // Calculate current streak (consecutive days from the last completion)
-      const lastCompletedDate = new Date(sortedDates[sortedDates.length - 1]);
-      const today = new Date();
-      const diffTime = today.getTime() - lastCompletedDate.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays <= 1) {
-        currentStreak = tempStreak;
-      } else {
-        currentStreak = 0;
-      }
-    }
-
     return {
       totalCompleted,
       completionPercentage,
-      bestStreak,
-      currentStreak,
     };
   }, [habit]);
-
   return (
     <SafeAreaView style={styles.safe}>
+      <Header habit={habit} onBack={() => router.navigate("/(tabs)/time")} />
+
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Header habit={habit} onBack={() => router.navigate("/(tabs)/time")} />
-
         {/* Progress Section */}
         <View style={styles.progressSection}>
           <ProgressCircle percentage={stats.completionPercentage} />
@@ -333,13 +293,13 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
             <StatCard
               icon="flame"
               title="أفضل سلسلة"
-              value={stats.bestStreak}
+              value={habit.bestStreak ?? 0}
               color="#F59E0B"
             />
             <StatCard
               icon="trending-up"
               title="السلسلة الحالية"
-              value={stats.currentStreak}
+              value={habit.streak}
               color="#10B981"
             />
           </View>
@@ -373,16 +333,13 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
 // Styles
 const styles = StyleSheet.create({
   safe: { backgroundColor: "#00070A" },
-  content: { paddingBottom: 40 },
+  content: { paddingBottom: 40, paddingTop: 20 },
 
   // Header
   header: {
     backgroundColor: "#0F172A",
     paddingTop: 40,
     paddingBottom: 16,
-    marginBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1E293B",
   },
   headerContent: {
     flexDirection: "row",

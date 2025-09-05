@@ -3,11 +3,12 @@ import { SalatHabitsDisplay } from "@/components/time/SalatHabitsDisplay";
 import DisplayDays from "@/components/time/displayDays";
 import { useAuth } from "@/lib/auth";
 import { fmtArabicDateMonthAndNumber } from "@/lib/dates";
-import { PRAYERS } from "@/lib/prayers";
+import { PRAYERS } from "@/assets/constants/prayers";
 import { loadUserById } from "@/lib/usersTable";
 import { useHabitsStore } from "@/store/habitsStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useBundlesStore } from "@/store/bundlesStore";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -43,6 +44,11 @@ const OrganizeModes: React.FC = () => {
   useEffect(() => {
     if (isHydrated) {
       loadAllHabits();
+      useBundlesStore.getState().initialize();
+      console.log(
+        "bundles from zustand store from index time",
+        useBundlesStore.getState().bundles
+      );
     }
   }, [isHydrated, loadAllHabits]);
   const selectedDay = useMemo(() => selectedDate.getDay(), [selectedDate]);

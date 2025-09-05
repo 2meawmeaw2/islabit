@@ -3,8 +3,112 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { CompletionRecord, HabitProps } from "../types/habit";
 
+// Helper function to calculate streaks properly
+
+function calculateStreaks(
+  completed: CompletionRecord[],
+  date: string,
+  prayer: string,
+  isCompleted: boolean,
+  relatedSalat: string[]
+): { streak: number; bestStreak: number } {
+  // Create the updated completion list based on the action
+  let updatedCompleted: CompletionRecord[];
+
+  if (isCompleted) {
+    // Add the new completion
+    updatedCompleted = [...completed, { date, prayer }];
+  } else {
+    // Remove the completion
+    updatedCompleted = completed.filter(
+      (record) => !(record.date === date && record.prayer === prayer)
+    );
+  }
+
+  // Get all unique dates when habit was completed, sorted in descending order
+  const completedDates = [
+    ...new Set(updatedCompleted.map((record) => record.date)),
+  ]
+    .sort()
+    .reverse();
+
+  // Calculate current streak - consecutive days up to the most recent completion
+  let currentStreak = 0;
+  const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
+  const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  if (completedDates.length > 0) {
+    const mostRecentCompletionStr = completedDates[0]; // Already sorted in descending order
+    const mostRecentDate = new Date(mostRecentCompletionStr);
+    const todayDate = new Date(todayStr);
+
+    // Calculate days between most recent completion and today
+    const daysDiff = Math.floor(
+      (todayDate.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    // Current streak is valid if:
+    // - Most recent completion is today (daysDiff = 0), OR
+    // - Most recent completion is yesterday (daysDiff = 1) - streak continues if they do it today/tomorrow
+    if (daysDiff <= 1) {
+      // Count consecutive days backwards from the most recent completion
+      let checkDate = new Date(mostRecentDate);
+
+      for (let i = 0; i < 365; i++) {
+        // Reasonable limit
+        const dateStr = checkDate.toISOString().split("T")[0];
+
+        if (completedDates.includes(dateStr)) {
+          currentStreak++;
+          // Move to previous day
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          // Found a gap, stop counting
+          break;
+        }
+      }
+    }
+    // If daysDiff > 1, the streak is broken (more than 1 day gap)
+  }
+
+  // Calculate best streak by finding longest consecutive sequence
+  let bestStreak = 0;
+
+  if (completedDates.length > 0) {
+    const ascendingDates = [...completedDates].sort();
+    let maxConsecutive = 1; // Start with 1 since we have at least one date
+    let currentConsecutive = 1;
+
+    for (let i = 1; i < ascendingDates.length; i++) {
+      const currentDate = new Date(ascendingDates[i]);
+      const previousDate = new Date(ascendingDates[i - 1]);
+
+      const daysDiff = Math.floor(
+        (currentDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (daysDiff === 1) {
+        // Consecutive day
+        currentConsecutive++;
+      } else {
+        // Gap found, update max and reset counter
+        maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+        currentConsecutive = 1;
+      }
+    }
+
+    // Don't forget the last sequence
+    bestStreak = Math.max(maxConsecutive, currentConsecutive);
+  }
+
+  return { streak: currentStreak, bestStreak };
+}
+
 // Extended habit interface to include bundle information
-interface ExtendedHabitProps extends HabitProps {
+export interface ExtendedHabitProps extends HabitProps {
   source?: "individual" | "bundle";
   bundleTitle?: string;
   isCompletedForSelectedDay?: boolean;
@@ -103,20 +207,22 @@ export const useHabitsStore = create<HabitsState>()(
           );
         }
 
-        // Update streak and bestStreak
-        const nextStreak = isCompleted
-          ? (updatedHabit.streak || 0) + 1
-          : Math.max(0, (updatedHabit.streak || 0) - 1);
-        const nextBestStreak = isCompleted
-          ? Math.max(nextStreak, updatedHabit.bestStreak || 0)
-          : updatedHabit.bestStreak || 0;
+        // Calculate proper streaks using our helper function
+        const { streak: calculatedStreak, bestStreak: calculatedBestStreak } =
+          calculateStreaks(
+            newCompleted,
+            date,
+            prayer,
+            isCompleted,
+            updatedHabit.relatedSalat || []
+          );
 
-        // Update the habit
+        // Update the habit with calculated streaks
         const finalUpdatedHabit: ExtendedHabitProps = {
           ...updatedHabit,
           completed: newCompleted,
-          streak: nextStreak,
-          bestStreak: nextBestStreak,
+          streak: calculatedStreak,
+          bestStreak: calculatedBestStreak,
           isCompletedForSelectedDay: isCompleted,
         };
 
@@ -257,6 +363,8 @@ export const useHabitsStore = create<HabitsState>()(
         try {
           await AsyncStorage.clear();
           set({ habits: [], selectedHabitId: null });
+          console.log("habits cleared");
+          console.log("habits", get().habits);
         } catch (error) {
           console.error("Error clearing storage:", error);
         }

@@ -25,6 +25,7 @@ import Animated, {
   LinearTransition,
   withTiming,
 } from "react-native-reanimated";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Bundle, addBundleToUserCommitedBundles } from "@/lib/bundles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "@/lib/auth";
@@ -40,6 +41,14 @@ const BundleConfirmationScreen = () => {
   const insets = useSafeAreaInsets();
   const [expandedHabits, setExpandedHabits] = useState<Set<number>>(new Set());
   const user = useContext(AuthContext);
+
+  // Date selection state
+  const [selectedEndDate, setSelectedEndDate] = useState<Date>(() => {
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 30); // Default to 30 days
+    return defaultDate;
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Scroll detection state and animated values
   const [isNearEnd, setIsNearEnd] = useState(false);
@@ -100,11 +109,12 @@ const BundleConfirmationScreen = () => {
         title: bundle.title || "عنوان غير محدد",
         subtitle: bundle.subtitle || "وصف فرعي غير محدد",
         description: bundle.description || "وصف غير محدد",
-        category: bundle.category || { text: "عام", hexColor: "#8B5CF6" },
+        category: bundle.category || { text: "عام", hexColor: "#00AEEF" },
         habits: Array.isArray(bundle.habits) ? bundle.habits : [],
         benefits: Array.isArray(bundle.benefits) ? bundle.benefits : [],
         comments: Array.isArray(bundle.comments) ? bundle.comments : [],
         rating: bundle.rating || 0,
+        color: bundle.color || "#00AEEF",
         enrolled_users: bundle.enrolled_users,
       }
     : null;
@@ -121,17 +131,23 @@ const BundleConfirmationScreen = () => {
     return now.toLocaleDateString("ar-SA", options);
   };
 
-  // Calculate end date (assuming 30 days duration)
+  // Calculate end date using selected date
   const getEndDateInArabic = () => {
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 30); // 30 days from now
     const options: Intl.DateTimeFormatOptions = {
       year: "numeric",
       month: "long",
       day: "numeric",
       weekday: "long",
     };
-    return endDate.toLocaleDateString("ar-SA", options);
+    return selectedEndDate.toLocaleDateString("ar-SA", options);
+  };
+
+  // Calculate journey duration in days
+  const getJourneyDuration = () => {
+    const startDate = new Date();
+    const timeDiff = selectedEndDate.getTime() - startDate.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return Math.max(1, daysDiff); // Ensure at least 1 day
   };
 
   // Function to handle confirming enrollment
@@ -202,6 +218,22 @@ const BundleConfirmationScreen = () => {
         }
       );
 
+      // Calculate complete date information for the bundle using selected end date
+      const startDate = new Date();
+      const journeyDuration = getJourneyDuration();
+
+      // Create complete date structure
+      const bundleDates = {
+        enrolled_at: new Date().toISOString(), // When user enrolled
+        start_date: startDate.toISOString(), // Journey start date
+        end_date: selectedEndDate.toISOString(), // User-selected journey end date
+        duration_days: journeyDuration, // Total journey duration based on selected date
+        current_day: 1, // Current day in the journey (starts at 1)
+        is_active: true, // Whether the bundle journey is currently active
+        completed_days: [], // Array to track which days have been completed
+        last_activity: new Date().toISOString(), // Last time user interacted with this bundle
+      };
+
       // Save bundle data to local storage with "bundles" key
       const bundleToSave = {
         id: safeBundle.id,
@@ -210,12 +242,15 @@ const BundleConfirmationScreen = () => {
         description: safeBundle.description,
         category: safeBundle.category,
         image_url: (safeBundle as any).image_url || "",
-        enrolled_at: new Date().toISOString(),
+        color: safeBundle.color,
+        dates: bundleDates, // Complete date information
         habits: bundleHabits, // Store the processed habits directly
       };
 
       const updatedBundles = [...existingBundles, bundleToSave];
       await AsyncStorage.setItem("bundles", JSON.stringify(updatedBundles));
+      const bundles2 = await AsyncStorage.getItem("bundles");
+      console.log("bundlesalllll", JSON.parse(bundles2 || "[]"));
 
       // Show success message
       Alert.alert(
@@ -415,22 +450,48 @@ const BundleConfirmationScreen = () => {
                 </View>
               </View>
 
-              {/* End Date */}
-              <View className="p-4">
+              {/* End Date - Interactive */}
+              <Pressable
+                onPress={() => setShowDatePicker(true)}
+                className="p-4 active:bg-white/5"
+              >
                 <View className="flex-row-reverse items-center gap-3">
                   <View className="w-10 h-10 bg-amber-400/20 rounded-xl items-center justify-center">
-                    <Ionicons name="flag" size={20} color="#FBBF24" />
+                    <Ionicons name="calendar" size={20} color="#FBBF24" />
                   </View>
                   <View className="flex-1">
                     <Text className="font-ibm-plex-arabic-bold text-text-primary text-right mb-1">
                       تاريخ الإنتهاء المتوقع
                     </Text>
                     <Text className="font-ibm-plex-arabic text-text-secondary text-right">
-                      {getEndDateInArabic()} (30 يوماً)
+                      {getEndDateInArabic()} ({getJourneyDuration()} يوماً)
                     </Text>
                   </View>
+                  <Ionicons name="chevron-forward" size={16} color="#8B5CF6" />
                 </View>
-              </View>
+              </Pressable>
+
+              {/* Date Picker Modal */}
+              {showDatePicker && (
+                <View className="px-4 pb-4 border-t border-white/10">
+                  <Text className="font-ibm-plex-arabic-bold text-text-primary text-right mb-3 mt-3">
+                    اختر تاريخ الانتهاء
+                  </Text>
+                  <DateTimePicker
+                    value={selectedEndDate}
+                    mode="date"
+                    display="default"
+                    minimumDate={new Date()} // Can't select past dates
+                    onChange={(event: any, selectedDate?: Date) => {
+                      setShowDatePicker(false);
+                      if (selectedDate) {
+                        setSelectedEndDate(selectedDate);
+                      }
+                    }}
+                    style={{ alignSelf: "flex-end" }}
+                  />
+                </View>
+              )}
             </View>
           </Animated.View>
 

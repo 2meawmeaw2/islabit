@@ -328,7 +328,6 @@ const HabitItem: React.FC<{
   const checkScale = useSharedValue(0);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(50);
-
   const isCompletedToday = habit.isCompletedForSelectedDay;
 
   // Use shared value instead of state to avoid unnecessary re-renders
@@ -501,8 +500,8 @@ const HabitItem: React.FC<{
               className="items-center justify-center"
             >
               <Animated.View style={checkAnimatedStyle}>
-                <View className="w-6 h-6 rounded-full bg-green-400 items-center justify-center shadow-sm">
-                  <Text className="text-slate-900 text-sm font-bold">✓</Text>
+                <View className="w-6 h-6 rounded-full bg-text-brand items-center justify-center shadow-sm">
+                  <Text className="text-text-primary text-sm font-bold">✓</Text>
                 </View>
               </Animated.View>
             </Animated.View>

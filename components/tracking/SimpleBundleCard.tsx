@@ -7,23 +7,30 @@ import Animated, {
   withSpring,
   FadeInDown,
 } from "react-native-reanimated";
+import { BundleCategory } from "@/lib/bundles";
+import { LinearGradient } from "expo-linear-gradient";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-type SimpleBundleCardProps = {
+interface SimpleBundleCardProps {
   title: string;
   subtitle?: string;
   habitCount?: number;
+  color?: string;
+  category?: BundleCategory;
   onPress?: () => void;
-};
+}
 
 export const SimpleBundleCard: React.FC<SimpleBundleCardProps> = ({
   title,
   subtitle,
   habitCount = 0,
+  color,
+  category,
   onPress,
 }) => {
   // Animation for press feedback
+  console.log("color", color);
   const pressScale = useSharedValue(1);
 
   const handlePressIn = () => {
@@ -51,6 +58,8 @@ export const SimpleBundleCard: React.FC<SimpleBundleCardProps> = ({
     transform: [{ scale: pressScale.value }],
   }));
 
+  const gradientColors = [color + "05", color + "10", color + "30"] as const;
+
   return (
     <Animated.View entering={FadeInDown.duration(250).springify()}>
       <AnimatedPressable
@@ -58,58 +67,38 @@ export const SimpleBundleCard: React.FC<SimpleBundleCardProps> = ({
         onPressOut={handlePressOut}
         onPress={handlePress}
         style={animatedStyle}
-        className="bg-fore rounded-2xl p-4 mb-3 mx-2"
+        className="bg-fore rounded-2xl p-4 mb-3 mx-2 overflow-hidden"
       >
-        {/* Bundle Header with Icon */}
-        <View className="flex-row-reverse items-center justify-between mb-3">
-          <View className="flex-row-reverse items-center">
-            <View className="bg-text-brand/20 rounded-full p-2 ml-3">
-              <MaterialCommunityIcons
-                name="package-variant"
-                size={20}
-                color="#00AEEF"
-              />
-            </View>
-            <Text className="text-text-primary font-ibm-plex-arabic-medium text-lg text-right">
-              bundle color {title}
-            </Text>
-          </View>
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="absolute top-0 left-0 right-0 bottom-0"
+        />
 
-          {/* Habit Count Badge */}
-          <View className="bg-border-highlight/20 border border-border-highlight/40 rounded-full px-3 py-1">
-            <Text className="text-border-highlight font-ibm-plex-arabic-medium text-xs">
-              bundle color {habitCount} عادة
-            </Text>
+        <View className="flex-row-reverse items-center justify-between mb-3">
+          <View className="flex-row-reverse items-center flex-1">
+            <View className="flex-1">
+              <Text className="text-text-primary font-ibm-plex-arabic-medium text-lg text-right">
+                {title}
+              </Text>
+            </View>
           </View>
         </View>
 
         {/* Subtitle */}
         {subtitle && (
-          <Text className="text-text-muted font-ibm-plex-arabic-light text-sm text-right mb-3">
+          <Text className="text-text-muted font-ibm-plex-arabic-light text-sm text-right ">
             {subtitle}
           </Text>
         )}
 
-        {/* Bundle Preview - Small habit indicators */}
-        <View className="flex-row-reverse justify-end space-x-reverse space-x-2">
-          {[...Array(Math.min(habitCount, 4))].map((_, index) => (
-            <View
-              key={index}
-              className="w-2 h-2 bg-text-brand/60 rounded-full"
-            />
-          ))}
-          {habitCount > 4 && (
-            <View className="w-2 h-2 bg-text-muted rounded-full items-center justify-center">
-              <Text className="text-text-muted text-[8px] font-ibm-plex-arabic-light">
-                +
-              </Text>
-            </View>
-          )}
-        </View>
-
         {/* Arrow indicator */}
-        <View className="absolute left-4 top-1/2 -translate-y-2">
-          <Ionicons name="chevron-back" size={18} color="#6C7684" />
+        <View
+          className="absolute left-4 top-1/2 -translate-y-2 rounded-full p-2"
+          style={{ backgroundColor: `${color}15` }}
+        >
+          <MaterialCommunityIcons name="chevron-left" size={20} color={color} />
         </View>
       </AnimatedPressable>
     </Animated.View>
