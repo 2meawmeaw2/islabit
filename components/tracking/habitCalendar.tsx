@@ -13,7 +13,6 @@ const ARROW_COLOR = "#85DEFF";
 const DAY_HEADER_COLOR = "#BDBDBD";
 const DAY_COLOR = "#BDBDBD";
 const DAY_TODAY_BORDER = "#60bfc5";
-const DAY_DISABLED_COLOR = "#454547";
 
 const DAY_SIZE = 43; // px
 const CALENDAR_MAX_WIDTH = 7 * DAY_SIZE + 12; // 7 days + some padding
@@ -47,10 +46,7 @@ const toArabicNumerals = (num: number): string => {
 
 // Helper to format date to "YYYY-MM-DD"
 const toDateString = (year: number, month: number, day: number): string =>
-  `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
-    2,
-    "0"
-  )}`;
+  `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
 type CalendarVariant = "standalone" | "embedded";
 
@@ -96,7 +92,10 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
   );
 
   // Get calendar data
-  const getCalendarData = (): Array<number | null> => {
+  const getCalendarData = (): Array<{
+    day: number;
+    isCurrentMonth: boolean;
+  }> => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
@@ -107,21 +106,34 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
     // Calendar starts with Sunday (0 = Sunday)
     const firstDayWeekday = firstDayOfMonth.getDay();
 
-    const days: Array<number | null> = [];
+    const days: Array<{ day: number; isCurrentMonth: boolean }> = [];
 
-    // Empty cells before the first day
-    for (let i = 0; i < firstDayWeekday; i++) {
-      days.push(null);
+    // Get last month's days that should appear
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = firstDayWeekday - 1; i >= 0; i--) {
+      days.push({
+        day: prevMonthLastDay - i,
+        isCurrentMonth: false,
+      });
     }
 
     // Days of the current month
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push(day);
+      days.push({
+        day,
+        isCurrentMonth: true,
+      });
     }
 
-    // Fill up to 6 rows
-    while (days.length % 7 !== 0) {
-      days.push(null);
+    // Calculate how many days we need to add to reach 42 days (6 rows × 7 days)
+    const remainingDays = 42 - days.length;
+
+    // Fill up with next month's days to complete 6 rows
+    for (let i = 1; i <= remainingDays; i++) {
+      days.push({
+        day: i,
+        isCurrentMonth: false,
+      });
     }
 
     return days;
@@ -139,7 +151,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
     const isCompleted = allCompletedDates.includes(dateStr);
 
     // Toggle completion by updating the store
-    completeHabit(habitId, dateStr, !isCompleted);
+    completeHabit(habitId, dateStr, "unknown", !isCompleted);
   };
 
   const navigateMonth = (direction: number): void => {
@@ -155,17 +167,15 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
 
   // Today logic for blue ring
   const today = new Date();
-  const isToday = (day: number | null): boolean =>
+  const isToday = (day: number): boolean =>
     !!(
-      day &&
       day === today.getDate() &&
       today.getMonth() === currentDate.getMonth() &&
       today.getFullYear() === currentDate.getFullYear()
     );
 
   // For marking completed days
-  const isCompleted = (day: number | null): boolean => {
-    if (!day) return false;
+  const isCompleted = (day: number): boolean => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const dateStr = toDateString(year, month, day);
@@ -308,13 +318,14 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
             width: "100%",
           }}
         >
-          {calendarDays.map((day, idx) => {
-            const completed = isCompleted(day);
-            const todayRing = isToday(day);
+          {calendarDays.map((dayData, idx) => {
+            const { day, isCurrentMonth } = dayData;
+            const completed = isCurrentMonth && isCompleted(day);
+            const todayRing = isCurrentMonth && isToday(day);
 
             // Determine if the habit should be done on this day (default to true if no schedule provided)
-            let shouldDo = true;
-            if (day) {
+            let shouldDo = isCurrentMonth;
+            if (isCurrentMonth) {
               const year = currentDate.getFullYear();
               const month = currentDate.getMonth();
               const weekday = getSundayFirstWeekday(year, month, day);
@@ -327,14 +338,13 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
             }
 
             // Color logic
-            const textColor =
-              day == null
-                ? DAY_DISABLED_COLOR
-                : completed
-                  ? "#fff"
-                  : todayRing
-                    ? DAY_TODAY_BORDER
-                    : DAY_COLOR;
+            const textColor = isCurrentMonth
+              ? completed
+                ? "#fff"
+                : todayRing
+                  ? DAY_TODAY_BORDER
+                  : DAY_COLOR
+              : DAY_COLOR;
 
             return (
               <View
@@ -347,52 +357,34 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
                   marginVertical: 2,
                 }}
               >
-                {day ? (
-                  <Pressable
-                    onPress={() => !readonly && toggleCompletion(day)}
-                    disabled={readonly}
+                <Pressable
+                  onPress={() =>
+                    isCurrentMonth && !readonly && toggleCompletion(day)
+                  }
+                  disabled={!isCurrentMonth || readonly}
+                  style={{
+                    width: DAY_SIZE - 7,
+                    height: DAY_SIZE - 7,
+                    borderRadius: (DAY_SIZE - 4) / 2,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    backgroundColor: completed ? "#00AEEF" : "transparent",
+                    borderWidth: todayRing ? 2 : 0,
+                    borderColor: todayRing ? DAY_TODAY_BORDER : "transparent",
+                    opacity: shouldDo ? 1 : 0.3,
+                  }}
+                >
+                  <Text
                     style={{
-                      width: DAY_SIZE - 4,
-                      height: DAY_SIZE - 4,
-                      borderRadius: (DAY_SIZE - 4) / 2,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      backgroundColor: completed ? "#60bfc5" : "transparent",
-                      borderWidth: todayRing ? 2 : 0,
-                      borderColor: todayRing ? DAY_TODAY_BORDER : "transparent",
-                      opacity: shouldDo ? 1 : 0.35,
+                      color: textColor,
                     }}
+                    className={`font-ibm-plex-arabic text-md ${
+                      completed ? "text-white" : ""
+                    }`}
                   >
-                    <Text
-                      style={{
-                        color: textColor,
-                      }}
-                      className={`font-ibm-plex-arabic text-md ${
-                        completed ? "text-white" : textColor
-                      }`}
-                    >
-                      {toArabicNumerals(day)}
-                    </Text>
-                  </Pressable>
-                ) : (
-                  <View
-                    style={{
-                      width: DAY_SIZE - 4,
-                      height: DAY_SIZE - 4,
-                      borderRadius: (DAY_SIZE - 4) / 2,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: DAY_DISABLED_COLOR,
-                        fontSize: 18,
-                        opacity: 0.3,
-                      }}
-                    ></Text>
-                  </View>
-                )}
+                    {toArabicNumerals(day)}
+                  </Text>
+                </Pressable>
               </View>
             );
           })}

@@ -111,6 +111,10 @@ const OrganizeModes: React.FC = () => {
 
       // Use the store's completeHabit function
       completeHabit(id, selectedDateStr, currentPrayer, completed);
+
+      // Update bundle completion if this habit belongs to a bundle
+      const { updateBundleCompletion } = useBundlesStore.getState();
+      await updateBundleCompletion(id, selectedDateStr, currentPrayer);
     },
     [selectedDate, getDateStr, completeHabit]
   );
