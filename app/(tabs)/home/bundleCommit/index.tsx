@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -26,10 +26,17 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from "react-native-reanimated";
-import { PRAYERS } from "@/lib/prayers";
+import { PRAYERS } from "@/assets/constants/prayers";
 import { shadowStyle } from "@/lib/shadow";
+import { CommentInput } from "@/components/CommentInput";
+import {
+  getBundleComments,
+  BundleComment,
+  formatCommentTime,
+} from "@/lib/bundle-comments";
 
-import { Bundle } from "@/lib/bundles";
+import { Bundle, toggleBundleLike } from "@/lib/bundles";
+import { supabase } from "@/utils/supabase";
 
 const SingleBundleScreen = () => {
   const { bundleData } = useLocalSearchParams<{
@@ -40,13 +47,38 @@ const SingleBundleScreen = () => {
   const [expandedHabits, setExpandedHabits] = useState<Set<number>>(new Set());
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [comments, setComments] = useState<BundleComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
   const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef(null);
   // Parse bundle data from params
   useEffect(() => {
     if (bundleData) {
       try {
         const parsedBundle = JSON.parse(bundleData) as Bundle;
         setBundle(parsedBundle);
+        // Initialize likes count from the likes array length
+        setLikesCount(parsedBundle.likes?.length || 0);
+
+        // Check if current user has already liked this bundle
+        const checkIfLiked = async () => {
+          try {
+            const { data: user } = await supabase.auth.getUser();
+            const userId = user.user?.id;
+            if (userId && parsedBundle.likes) {
+              setIsLiked(parsedBundle.likes.includes(userId));
+            } else {
+              setIsLiked(false);
+            }
+          } catch (error) {
+            console.error("Error checking like status:", error);
+            setIsLiked(false);
+          }
+        };
+
+        checkIfLiked();
       } catch (parseError) {
         console.error("Error parsing bundle data:", parseError);
         setError("خطأ في تحليل بيانات الحزمة");
@@ -55,6 +87,7 @@ const SingleBundleScreen = () => {
       setError("لم يتم العثور على بيانات الحزمة");
     }
   }, [bundleData]);
+
   // Safety check - if no bundle found at all, redirect to home
 
   // Ensure bundle has required properties
@@ -68,10 +101,56 @@ const SingleBundleScreen = () => {
         habits: Array.isArray(bundle.habits) ? bundle.habits : [],
         benefits: Array.isArray(bundle.benefits) ? bundle.benefits : [],
         comments: Array.isArray(bundle.comments) ? bundle.comments : [],
-        rating: bundle.rating || 0,
+        likes: bundle.likes || [],
         enrolled_users: bundle.enrolled_users,
+        user_has_liked: bundle.user_has_liked || isLiked,
       }
     : null;
+
+  const fetchComments = async () => {
+    if (!safeBundle?.id) return;
+    setCommentsLoading(true);
+    const comments = await getBundleComments(safeBundle.id);
+    setComments(comments);
+    setCommentsLoading(false);
+  };
+
+  // Function to refresh comments after new comment is added
+  const handleCommentAdded = () => {
+    fetchComments();
+  };
+
+  // Function to handle likes
+  const handleToggleLike = async () => {
+    if (!safeBundle?.id) return;
+
+    try {
+      // Optimistic update
+      const newLikedState = !isLiked;
+      const newLikesCount = newLikedState
+        ? likesCount + 1
+        : Math.max(0, likesCount - 1);
+
+      setIsLiked(newLikedState);
+      setLikesCount(newLikesCount);
+
+      // Update in Supabase
+      await toggleBundleLike(safeBundle.id, newLikedState);
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      // Revert on error
+      setIsLiked(!isLiked);
+      setLikesCount(isLiked ? likesCount + 1 : Math.max(0, likesCount - 1));
+      Alert.alert("خطأ", "حدث خطأ أثناء تحديث الإعجاب، يرجى المحاولة مرة أخرى");
+    }
+  };
+
+  // Fetch comments when bundle is loaded
+  useEffect(() => {
+    if (safeBundle?.id) {
+      fetchComments();
+    }
+  }, [safeBundle?.id]);
 
   // Animated values for arrow rotations
   const arrowRotations = useSharedValue<{ [key: number]: number }>({});
@@ -115,9 +194,7 @@ const SingleBundleScreen = () => {
     "السبت", // Saturday
   ];
 
-  const comments: { id: string; user: string; text: string; time: string }[] = (
-    safeBundle?.comments as any[]
-  )?.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  // Comments are now fetched from Supabase and stored in state
 
   // Function to toggle habit dropdown
   const toggleHabitDropdown = (index: number) => {
@@ -180,7 +257,7 @@ const SingleBundleScreen = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg">
+    <SafeAreaView ref={scrollViewRef} className="flex-1 bg-bg">
       {/* Modern Header */}
       <View className="flex-row-reverse items-center justify-between px-6 py-4 bg-fore border-b border-white/10">
         <Animated.Text
@@ -251,9 +328,19 @@ const SingleBundleScreen = () => {
                   entering={FadeInRight.delay(200).duration(600)}
                   className="flex-row items-center gap-1"
                 >
-                  <Ionicons name="star" size={16} color="#FBBF24" />
+                  <Pressable
+                    onPress={handleToggleLike}
+                    hitSlop={10}
+                    style={{ opacity: 1 }}
+                  >
+                    <Ionicons
+                      name={isLiked ? "heart" : "heart-outline"}
+                      size={18}
+                      color={isLiked ? "#DC2626" : "#fff"}
+                    />
+                  </Pressable>
                   <Text className="text-white font-ibm-plex-arabic-semibold text-sm">
-                    {safeBundle.rating}
+                    {likesCount}
                   </Text>
                 </Animated.View>
                 <Animated.View
@@ -286,7 +373,7 @@ const SingleBundleScreen = () => {
             entering={FadeInUp.delay(400).duration(600)}
             className="px-6 mb-8"
           >
-            <Text className="text-text-brand font-ibm-plex-arabic-bold text-xl mb-4 text-right">
+            <Text className="text-text-brand font-ibm-plex-arabic-bold text-xl pb-4 text-right">
               العادات في هذه الرحلة
             </Text>
             <View className="gap-3">
@@ -461,44 +548,70 @@ const SingleBundleScreen = () => {
             </Animated.View>
           )}
 
+          {/* Comment Input Section */}
+          <CommentInput
+            bundleId={safeBundle.id}
+            onCommentAdded={handleCommentAdded}
+          />
+
           {/* Comments Section */}
           <Animated.View
             entering={FadeInUp.delay(1000).duration(600)}
             className="px-6 mb-8"
           >
             <Text className="text-text-brand font-ibm-plex-arabic-bold text-xl mb-4 text-right">
-              التعليقات
+              التعليقات ({comments.length})
             </Text>
-            <View className="gap-3">
-              {comments.map((c, idx) => (
-                <Animated.View
-                  key={idx}
-                  entering={FadeInUp.delay(1100 + idx * 100).duration(600)}
-                  className="bg-fore rounded-2xl p-4 border border-white/10 shadow-sm"
-                >
-                  <View className="flex-row-reverse items-start gap-3">
-                    <View className="w-10 h-10 bg-sky-500 rounded-full items-center justify-center">
-                      <Text className="text-white font-ibm-plex-arabic-bold text-lg">
-                        {c.user.substring(0, 1)}
-                      </Text>
-                    </View>
-                    <View className="flex-1">
-                      <View className="flex-row-reverse items-center justify-between mb-2">
-                        <Text className="text-text-primary font-ibm-plex-arabic-bold text-base">
-                          {c.user}
-                        </Text>
-                        <Text className="text-text-secondary font-ibm-plex-arabic-medium text-sm">
-                          {c.time}
+
+            {commentsLoading ? (
+              <View className="items-center py-8">
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text className="text-text-secondary font-ibm-plex-arabic text-sm mt-2">
+                  جاري تحميل التعليقات...
+                </Text>
+              </View>
+            ) : comments.length > 0 ? (
+              <View className="gap-3">
+                {comments.map((comment, idx) => (
+                  <Animated.View
+                    key={comment.id}
+                    entering={FadeInUp.delay(1100 + idx * 100).duration(600)}
+                    className="bg-fore rounded-2xl p-4 border border-white/10 shadow-sm"
+                  >
+                    <View className="flex-row-reverse items-start gap-3">
+                      <View className="w-10 h-10 bg-sky-500 rounded-full items-center justify-center">
+                        <Text className="text-white font-ibm-plex-arabic-bold text-lg">
+                          {comment.userName.substring(0, 1)}
                         </Text>
                       </View>
-                      <Text className="text-text-primary font-ibm-plex-arabic-medium text-sm text-right leading-5">
-                        {c.text}
-                      </Text>
+                      <View className="flex-1">
+                        <View className="flex-row-reverse items-center justify-between mb-2">
+                          <Text className="text-text-primary font-ibm-plex-arabic-bold text-base">
+                            {comment.userName}
+                          </Text>
+                          <Text className="text-text-secondary font-ibm-plex-arabic-medium text-sm">
+                            {formatCommentTime(comment.createdAt)}
+                          </Text>
+                        </View>
+                        <Text className="text-text-primary font-ibm-plex-arabic-medium text-sm text-right leading-5">
+                          {comment.text}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                </Animated.View>
-              ))}
-            </View>
+                  </Animated.View>
+                ))}
+              </View>
+            ) : (
+              <View className="items-center py-8">
+                <Ionicons name="chatbubble-outline" size={48} color="#9CA3AF" />
+                <Text className="text-text-secondary font-ibm-plex-arabic text-base mt-3 text-center">
+                  لا توجد تعليقات بعد
+                </Text>
+                <Text className="text-text-disabled font-ibm-plex-arabic-light text-sm mt-1 text-center">
+                  كن أول من يشارك تجربته مع هذه الرحلة
+                </Text>
+              </View>
+            )}
           </Animated.View>
         </Animated.View>
       </Animated.ScrollView>

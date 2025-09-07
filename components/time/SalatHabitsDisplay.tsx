@@ -99,7 +99,7 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
     // Auto-collapse when transitioning to all completed
     useEffect(() => {
       // If we just completed all habits (transition from not all completed to all completed)
-      if (allCompleted && !wasAllCompleted && totalHabits > 0) {
+      if (allCompleted && totalHabits > 0) {
         // Add a small delay for celebration feeling
         const timer = setTimeout(() => {
           setIsCollapsed(false); // This will trigger shouldShowCollapsed logic
@@ -111,7 +111,7 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
 
       // Update the tracking state
       setWasAllCompleted(allCompleted);
-    }, [allCompleted, wasAllCompleted, totalHabits]);
+    }, [wasAllCompleted, totalHabits]);
 
     // Announce achievement
 
@@ -147,7 +147,7 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
       >
         {/* Clean Salat Header */}
         <AnimatedPressable
-          onPress={shouldShowCollapsed ? toggleCollapse : undefined}
+          onPress={shouldShowCollapsed ? toggleCollapse : toggleCollapse}
           className={`  ${shouldShowCollapsed ? "cursor-pointer" : ""}`}
           style={headerAnimatedStyle}
           accessibilityRole="button"
@@ -479,50 +479,39 @@ const HabitItem: React.FC<{
     >
       <Animated.View
         style={[animatedStyle, { marginBottom: 10 }]}
-        className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-xl p-4 shadow-lg border border-slate-600/30"
+        className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-full p-4 shadow-lg border border-slate-600/30"
       >
         {/* Enhanced Toggle Button with better animations */}
-        <AnimatedPressable
-          onPress={handleToggle}
-          className="w-12 h-12 rounded-full bg-slate-600/90 items-center justify-center mr-4 border border-slate-500/40"
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: isCompletedToday }}
-          accessibilityLabel="تبديل حالة الإكمال"
-        >
-          <Animated.View
-            style={completedCheckAnimatedStyle}
-            className="absolute items-center justify-center"
+        <AnimatedPressable className="w-8 h-8 rounded-full  items-center justify-center mr-4 border-2 border-text-disabled">
+          <AnimatedPressable
+            onPress={handleToggle}
+            accessibilityRole="checkbox"
+            accessibilityLabel="تبديل حالة الإكمال"
+            style={[
+              completedCheckAnimatedStyle,
+              { width: "100%", height: "100%" },
+            ]}
+            className="absolute items-center justify-center  rounded-full"
           >
             <Animated.View
               entering={FadeIn.duration(400).easing(
                 Easing.bezier(0.25, 0.46, 0.45, 0.94)
               )}
-              className="items-center justify-center"
+              style={{ width: "100%", height: "100%" }}
+              className="items-center justify-center bg-black rounded-full"
             >
-              <Animated.View style={checkAnimatedStyle}>
-                <View className="w-6 h-6 rounded-full bg-text-brand items-center justify-center shadow-sm">
+              <Animated.View
+                style={[checkAnimatedStyle, { width: "100%", height: "100%" }]}
+              >
+                <View
+                  style={{ width: "100%", height: "100%" }}
+                  className="w-6 h-6 rounded-full bg-text-brand items-center justify-center shadow-sm"
+                >
                   <Text className="text-text-primary text-sm font-bold">✓</Text>
                 </View>
               </Animated.View>
             </Animated.View>
-          </Animated.View>
-
-          <Animated.View
-            style={uncompletedCheckAnimatedStyle}
-            className="absolute items-center justify-center"
-          >
-            <Animated.View
-              entering={FadeIn.duration(400).easing(
-                Easing.bezier(0.25, 0.46, 0.45, 0.94)
-              )}
-              exiting={FadeOut.duration(400).easing(
-                Easing.bezier(0.25, 0.46, 0.45, 0.94)
-              )}
-              className="items-center justify-center"
-            >
-              <View className="w-6 h-6 rounded-full bg-slate-500/60" />
-            </Animated.View>
-          </Animated.View>
+          </AnimatedPressable>
         </AnimatedPressable>
 
         {/* Clean Habit Content with smooth transitions */}
@@ -549,21 +538,6 @@ const HabitItem: React.FC<{
               </Animated.Text>
 
               {/* Bundle Indicator */}
-              {habit.source === "bundle" && habit.category && (
-                <View className="ml-2 flex-row items-center">
-                  <View className="bg-sky-500/20 px-2 py-1 rounded-full">
-                    <Text
-                      style={{
-                        color: habit.category.hexColor || "#22C55E",
-                        fontSize: 10,
-                      }}
-                      className="text-xs text-sky-400 font-ibm-plex-arabic-medium"
-                    >
-                      {habit.bundleTitle}
-                    </Text>
-                  </View>
-                </View>
-              )}
             </View>
           </AnimatedPressable>
         </Animated.View>

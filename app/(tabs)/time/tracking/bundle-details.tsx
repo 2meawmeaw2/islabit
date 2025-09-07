@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBundlesStore, BundleLocal } from "@/store/bundlesStore";
 import PercentageCircle from "@/components/PercentageCircle";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
-import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 import { format, parseISO } from "date-fns";
 import tokens from "@/tokens";
 
@@ -37,7 +42,7 @@ export default function BundleDetailsScreen() {
   const completedDays = bundle.dates?.completed_days?.length || 0;
   const progress =
     totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
-  const daysLeft = totalDays - (bundle.dates?.current_day || 0);
+  const daysLeft = totalDays - completedDays; // Days left = total - completed (more accurate)
 
   // Calculate best streak
   // This is simplified and would need actual logic for consecutive days
@@ -49,11 +54,53 @@ export default function BundleDetailsScreen() {
     )
   );
 
-  // Calculate missed days (simplified)
-  const missedDays = (bundle.dates?.current_day || 0) - completedDays;
+  // Calculate missed days (days that have passed but weren't completed)
+  const today = new Date();
+  const startDate = new Date(bundle.dates?.start_date || today);
+  const daysPassed = Math.max(
+    0,
+    Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+  );
+  const missedDays = Math.max(0, daysPassed - completedDays);
 
-  // Timeline positions
-  const currentPosition = (bundle.dates?.current_day || 0) / totalDays;
+  // Progress Circle Component with animated percentage
+  const ProgressCircle = ({ percentage }: { percentage: number }) => {
+    const animatedStyle = useAnimatedStyle(() => {
+      return {
+        transform: [
+          {
+            rotate: withSpring(`${percentage * 3.6}deg`, {
+              damping: 15,
+              stiffness: 100,
+            }),
+          },
+        ],
+      };
+    });
+
+    return (
+      <View style={styles.progressContainer}>
+        <View style={styles.progressCircle}>
+          <View style={styles.progressBackground} />
+          <Animated.View
+            style={[
+              styles.progressFill,
+              animatedStyle,
+              { backgroundColor: bundle.color },
+            ]}
+          />
+          <View style={styles.progressCenter}>
+            <Text className="text-text-primary font-ibm-plex-arabic-bold text-3xl">
+              {Math.round(percentage)}%
+            </Text>
+            <Text className="text-text-primary font-ibm-plex-arabic-medium text-sm">
+              مكتمل
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
@@ -74,56 +121,39 @@ export default function BundleDetailsScreen() {
           </Text>
         </View>
 
-        {/* Bundle Header with Progress */}
+        {/* Bundle Header with Icon Style */}
         <Animated.View
           entering={FadeInDown.duration(500)}
-          className="px-4 pt-2 pb-6 "
+          className="px-4 pt-2 pb-6 items-center w-full"
         >
-          <View className="flex-row bg-fore p-4 justify-between rounded-2xl">
-            <PercentageCircle
-              size={80}
-              strokeWidth={8}
-              percentage={progress}
-              progressColor={bundle.color}
-              backgroundColor="transparent"
-              trackColor="#2A2F3833"
-              labelStyle={{
-                color: bundle.color,
-                fontFamily: tokens.fontFamily["ibm-plex-arabic-medium"],
-              }}
-            />
-
-            <View className="  ml-4">
-              <View
-                style={{
-                  backgroundColor: `${bundle.category.hexColor}15`,
-                  paddingHorizontal: 5, // Add horizontal padding to keep the text from touching the border
-                  alignSelf: "flex-end",
-                  marginBottom: 5,
-                }}
-                className="rounded-full px-2 py-0.5"
-              >
-                <Text
-                  style={{ color: bundle.category.hexColor }}
-                  className="font-ibm-plex-arabic-medium text-xs pb-1 "
-                >
-                  {bundle.category.text}
-                </Text>
-              </View>
-
-              <Text
-                style={{ color: bundle.color }}
-                className="  text-right font-ibm-plex-arabic-semibold mb-2 text-xl "
-              >
-                {bundle.title}
-              </Text>
-              <Text
-                style={{ color: bundle.color }}
-                className=" font-ibm-plex-arabic text-sm"
-              >
-                {bundle.subtitle}
-              </Text>
+          <View className="bg-fore p-6 rounded-2xl w-full  items-center">
+            {/* Large Icon Container */}
+            <View
+              className="w-24 h-24 rounded-2xl items-center justify-center mb-4"
+              style={{ backgroundColor: `${bundle.color}15` }} // Light beige background
+            >
+              <MaterialCommunityIcons
+                name="flower"
+                size={40}
+                color={bundle.color}
+              />
             </View>
+
+            {/* Title */}
+            <Text
+              className="font-ibm-plex-arabic-semibold text-xl mb-2"
+              style={{ color: bundle.color }}
+            >
+              {bundle.title}
+            </Text>
+
+            {/* Subtitle */}
+            <Text
+              className="font-ibm-plex-arabic text-sm mb-4"
+              style={{ color: bundle.color }}
+            >
+              {bundle.subtitle}
+            </Text>
           </View>
         </Animated.View>
 
@@ -133,10 +163,10 @@ export default function BundleDetailsScreen() {
           className="px-4 pb-6"
         >
           <View className="bg-fore p-4 rounded-2xl">
-            <Text className="text-right text-text-primary font-ibm-plex-arabic-medium text-base mb-1">
+            <Text className="text-center  text-text-primary font-ibm-plex-arabic-semibold text-xl mt-4 mb-4">
               الوصف
             </Text>
-            <Text className=" text-right text-text-muted font-ibm-plex-arabic text-sm">
+            <Text className=" text-center leading-relaxed tracking-wide text-text-secondary font-ibm-plex-arabic text-sm">
               {bundle.description || "لا يوجد وصف لهذه الحزمة"}
             </Text>
           </View>
@@ -147,14 +177,14 @@ export default function BundleDetailsScreen() {
           entering={FadeInDown.duration(500).delay(200)}
           className="px-4 pb-6"
         >
-          <View className="bg-fore p-4 rounded-2xl">
-            <Text className="text-right text-text-primary font-ibm-plex-arabic-medium text-base mb-3">
+          <View className="bg-fore gap-2 p-4 rounded-2xl">
+            <Text className="text-center  text-text-primary font-ibm-plex-arabic-semibold text-xl mt-4 mb-4">
               معلومات عامة
             </Text>
 
             <View className="flex-row justify-between">
               {/* Best Streak */}
-              <View className="items-center flex-1">
+              <View className="items-center flex-1 bg-bg mx-2 py-4 rounded-2xl">
                 <View className="bg-text-brand/10 rounded-full p-2 mb-2">
                   <MaterialCommunityIcons
                     name="fire"
@@ -171,7 +201,7 @@ export default function BundleDetailsScreen() {
               </View>
 
               {/* Days Left */}
-              <View className="items-center flex-1">
+              <View className="items-center flex-1 bg-bg mx-2 py-4 rounded-2xl">
                 <View className="bg-amber-500/10 rounded-full p-2 mb-2">
                   <MaterialCommunityIcons
                     name="calendar-clock"
@@ -188,7 +218,7 @@ export default function BundleDetailsScreen() {
               </View>
 
               {/* Missed Days */}
-              <View className="items-center flex-1">
+              <View className="items-center flex-1 bg-bg mx-2 py-4 rounded-2xl ">
                 <View className="bg-rose-500/10 rounded-full p-2 mb-2">
                   <MaterialCommunityIcons
                     name="calendar-remove"
@@ -207,72 +237,75 @@ export default function BundleDetailsScreen() {
           </View>
         </Animated.View>
 
-        {/* Timeline */}
+        {/* Date Range Display */}
         <Animated.View
-          entering={FadeInDown.duration(500).delay(300)}
-          className="px-4 pb-8"
+          entering={FadeInDown.duration(500).delay(250)}
+          className="px-4 pb-6"
         >
           <View className="bg-fore p-4 rounded-2xl">
-            <Text className=" text-right text-text-primary font-ibm-plex-arabic-medium text-base mb-4">
-              التقدم الزمني
+            <Text className="text-center text-text-primary font-ibm-plex-arabic-semibold text-xl mb-4">
+              فترة التنفيذ
             </Text>
 
-            <View className="h-60 items-center">
-              {/* Timeline Track */}
-              <View className="absolute top-0 bottom-0 w-1 bg-slate-700/20 rounded-full" />
-
-              {/* Start Point */}
-              <View className="absolute top-0 z-10 items-center">
-                <View className="bg-sky-500 rounded-full p-3">
-                  <MaterialCommunityIcons name="cloud" size={20} color="#fff" />
-                </View>
-                <Text className="text-text-muted font-ibm-plex-arabic text-xs mt-2">
-                  {bundle.dates?.start_date
-                    ? format(parseISO(bundle.dates.start_date), "yyyy/MM/dd")
-                    : "بداية"}
-                </Text>
-              </View>
-
-              {/* Current Progress */}
-              <View
-                className="absolute items-center z-20"
-                style={{ top: `${Math.min(currentPosition * 100, 75)}%` }}
-              >
-                <View className="bg-white rounded-full p-3 shadow-md">
-                  <Text className="text-sky-500 font-ibm-plex-arabic-semibold text-sm">
-                    {progress}%
-                  </Text>
-                </View>
-              </View>
-
-              {/* End Point */}
-              <View className="absolute bottom-0 z-10 items-center">
-                <Text className="text-text-muted font-ibm-plex-arabic text-xs mb-2">
-                  {bundle.dates?.end_date
-                    ? format(parseISO(bundle.dates.end_date), "yyyy/MM/dd")
-                    : "نهاية"}
-                </Text>
-                <View className="bg-slate-700 rounded-full p-3">
+            <View className="flex-row-reverse justify-between items-center">
+              {/* Start Date */}
+              <View className="flex-1  items-center bg-bg mx-2 py-4 rounded-2xl">
+                <View className="bg-green-500/10 rounded-full p-2 mb-2">
                   <MaterialCommunityIcons
-                    name="laptop"
+                    name="calendar-check"
                     size={20}
-                    color="#fff"
+                    color="#10B981"
                   />
                 </View>
+                <Text className="text-text-primary font-ibm-plex-arabic-medium text-md mb-1">
+                  تاريخ البداية
+                </Text>
+                <Text className="text-text-secondary font-ibm-plex-arabic text-xs text-center">
+                  {bundle.dates?.start_date
+                    ? format(parseISO(bundle.dates.start_date), "yyyy/MM/dd")
+                    : "غير محدد"}
+                </Text>
               </View>
 
-              {/* Filled Track for Progress */}
-              <View
-                className="absolute top-0 w-1 bg-gradient-to-b from-sky-500 to-blue-600 rounded-full"
-                style={{ height: `${Math.min(currentPosition * 100, 100)}%` }}
-              />
+              {/* End Date */}
+              <View className="flex-1 items-center bg-bg mx-2 py-4 rounded-2xl">
+                <View className="bg-text-brand/10 rounded-full p-2 mb-2">
+                  <MaterialCommunityIcons
+                    name="flag"
+                    style={{ transform: [{ rotateY: "180deg" }] }}
+                    size={20}
+                    color="#00AEEF"
+                  />
+                </View>
+                <Text className="text-text-primary font-ibm-plex-arabic-medium text-md mb-1">
+                  تاريخ النهاية
+                </Text>
+                <Text className="text-text-secondary font-ibm-plex-arabic text-xs text-center">
+                  {bundle.dates?.end_date
+                    ? format(parseISO(bundle.dates.end_date), "yyyy/MM/dd")
+                    : "غير محدد"}
+                </Text>
+              </View>
             </View>
+          </View>
+        </Animated.View>
+
+        {/* Progress Circle */}
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(350)}
+          className="px-4 pb-8"
+        >
+          <View className="bg-fore p-4 rounded-2xl items-center">
+            <Text className="text-center text-text-primary font-ibm-plex-arabic-semibold text-xl mb-6">
+              التقدم العام
+            </Text>
+            <ProgressCircle percentage={progress} />
           </View>
         </Animated.View>
 
         {/* Habits in Bundle */}
         <Animated.View
-          entering={FadeInDown.duration(500).delay(400)}
+          entering={FadeInDown.duration(500).delay(450)}
           className="px-4 pb-8"
         >
           <Text className="text-right text-text-primary font-ibm-plex-arabic-semibold text-lg mb-3">
@@ -325,3 +358,40 @@ export default function BundleDetailsScreen() {
     </SafeAreaView>
   );
 }
+
+// Styles for Progress Circle
+const styles = StyleSheet.create({
+  progressContainer: {
+    alignItems: "center",
+  },
+  progressCircle: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  progressBackground: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    borderRadius: 100,
+    borderWidth: 8,
+    borderColor: "#334155",
+  },
+  progressFill: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    borderRadius: 100,
+    borderWidth: 8,
+    borderColor: "transparent",
+    borderTopColor: "#00AEEF",
+    transform: [{ rotate: "0deg" }],
+  },
+  progressCenter: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

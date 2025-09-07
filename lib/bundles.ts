@@ -37,7 +37,9 @@ export interface Bundle {
   habits: BundleHabit[];
   benefits: string[];
   comments: BundleComment[];
-  rating: number;
+  rating?: number;
+  likes?: string[];
+  user_has_liked?: boolean;
   enrolled_users: string[];
   created_at: string;
   updated_at: string;
@@ -66,6 +68,9 @@ export const fetchBundles = async (): Promise<Bundle[]> => {
 // Fetch a single bundle by ID
 export const fetchBundleById = async (id: string): Promise<Bundle | null> => {
   try {
+    const { data: user } = await supabase.auth.getUser();
+    const userId = user.user?.id;
+
     const { data, error } = await supabase
       .from("bundles")
       .select("*")
@@ -75,6 +80,12 @@ export const fetchBundleById = async (id: string): Promise<Bundle | null> => {
     if (error) {
       console.error("Error fetching bundle:", error);
       throw error;
+    }
+
+    // Check if user has liked this bundle
+    if (data && userId) {
+      const likes = data.likes || [];
+      data.user_has_liked = likes.includes(userId);
     }
 
     return data;
@@ -105,26 +116,42 @@ export const updateBundleRating = async (
   }
 };
 
-// Increment enrolled count when user enrolls in a bundle
-export const incrementEnrolledCount = async (
-  bundleId: string
+// Add user to bundle's enrolled_users list (idempotent)
+export const addUserToBundleEnrolledUsers = async (
+  bundleId: string,
+  userId: string
 ): Promise<void> => {
   try {
-    const { error } = await supabase
+    if (!userId || !bundleId) return;
+
+    // Get current enrolled users for the bundle
+    const { data: bundle, error: fetchError } = await supabase
       .from("bundles")
-      .update({
-        enrolled_count: supabase.rpc("increment_enrolled_count", {
-          bundle_id: bundleId,
-        }),
-      })
+      .select("enrolled_users")
+      .eq("id", bundleId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching bundle enrolled_users:", fetchError);
+      throw fetchError;
+    }
+
+    const current = (bundle?.enrolled_users || []) as string[];
+    if (current.includes(userId)) return; // already enrolled
+
+    const updated = [...current, userId];
+
+    const { error: updateError } = await supabase
+      .from("bundles")
+      .update({ enrolled_users: updated })
       .eq("id", bundleId);
 
-    if (error) {
-      console.error("Error incrementing enrolled count:", error);
-      throw error;
+    if (updateError) {
+      console.error("Error updating enrolled_users:", updateError);
+      throw updateError;
     }
   } catch (error) {
-    console.error("Error in incrementEnrolledCount:", error);
+    console.error("Error in addUserToBundleEnrolledUsers:", error);
     throw error;
   }
 };
@@ -205,6 +232,66 @@ export const addBundleToUserCommitedBundles = async (
     console.log("Successfully added bundle to user's committed bundles");
   } catch (error) {
     console.error("Error in addBundleToUserCommitedBundles:", error);
+    throw error;
+  }
+};
+
+// Toggle like for a bundle
+export const toggleBundleLike = async (
+  bundleId: string,
+  isLiked: boolean
+): Promise<void> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("User not authenticated");
+
+    const userId = user.user.id;
+
+    // Get current bundle data
+    const { data: bundle, error: fetchError } = await supabase
+      .from("bundles")
+      .select("likes")
+      .eq("id", bundleId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching bundle:", fetchError);
+      throw fetchError;
+    }
+
+    // Initialize likes array if it doesn't exist
+    const currentLikes = bundle?.likes || [];
+
+    // Update likes array based on action
+    let updatedLikes;
+    if (isLiked) {
+      // Add user to likes if not already present
+      if (!currentLikes.includes(userId)) {
+        updatedLikes = [...currentLikes, userId];
+      } else {
+        updatedLikes = currentLikes;
+      }
+    } else {
+      // Remove user from likes
+      updatedLikes = currentLikes.filter((id: string) => id !== userId);
+    }
+
+    // Update the bundle with new likes data
+    const { error: updateError } = await supabase
+      .from("bundles")
+      .update({
+        likes: updatedLikes,
+      })
+      .eq("id", bundleId);
+
+    if (updateError) {
+      console.error("Error updating bundle likes:", updateError);
+      throw updateError;
+    }
+
+    console.log("Successfully updated bundle likes");
+  } catch (error) {
+    console.error("Error in toggleBundleLike:", error);
     throw error;
   }
 };

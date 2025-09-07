@@ -230,7 +230,7 @@ const BundleConfirmationScreen = () => {
         duration_days: journeyDuration, // Total journey duration based on selected date
         current_day: 1, // Current day in the journey (starts at 1)
         is_active: true, // Whether the bundle journey is currently active
-        completed_days: [], // Array to track which days have been completed
+        completed_days: [], // Array to track which days have been completed (will be calculated based on habit completions)
         last_activity: new Date().toISOString(), // Last time user interacted with this bundle
       };
 
