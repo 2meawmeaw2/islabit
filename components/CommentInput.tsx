@@ -1,31 +1,32 @@
-import React, { useState, useRef } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  Alert,
-  ActivityIndicator,
-  Keyboard,
-  Platform,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import Animated, {
-  FadeInUp,
-  FadeOutDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  withSpring,
-  withSequence,
-  LinearTransition,
-  FadeInLeft,
-  FadeOutLeft,
-} from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth";
 import { addBundleComment } from "@/lib/bundle-comments";
-import { scrollTo } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import React, { useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import Animated, {
+  FadeInLeft,
+  FadeInRight,
+  FadeInUp,
+  FadeOutDown,
+  FadeOutRight,
+  FadeOutLeft,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 interface CommentInputProps {
   bundleId: string;
@@ -38,11 +39,11 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [inputHeight, setInputHeight] = useState(60);
+  const [inputHeight, setInputHeight] = useState(120);
   const inputRef = useRef<TextInput>(null);
 
   // Animation values
-  const containerHeight = useSharedValue(60);
+  const containerHeight = useSharedValue(120);
   const submitButtonScale = useSharedValue(0);
   const submitButtonOpacity = useSharedValue(0);
   const borderOpacity = useSharedValue(0.1);
@@ -118,7 +119,7 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
   const handleContentSizeChange = (event: any) => {
     const { height } = event.nativeEvent.contentSize;
     const newHeight = Math.max(
-      isExpanded ? Math.max(height + 80, 120) : 60, // 80px for padding and controls
+      isExpanded ? Math.max(height + 80, 120) : 120, // 80px for padding and controls
       Math.min(height + 80, 250) // Max height 250px
     );
 
@@ -151,8 +152,8 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
 
     if (!commentText.trim()) {
       setIsExpanded(false);
-      setInputHeight(60);
-      containerHeight.value = 60;
+      setInputHeight(120);
+      containerHeight.value = 120;
       submitButtonScale.value = 0;
       submitButtonOpacity.value = 0;
       borderOpacity.value = 0.1;
@@ -213,8 +214,8 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
         setCommentText("");
         setIsExpanded(false);
         setIsFocused(false);
-        setInputHeight(60);
-        containerHeight.value = 60;
+        setInputHeight(120);
+        containerHeight.value = 120;
         submitButtonScale.value = 0;
         submitButtonOpacity.value = 0;
         borderOpacity.value = 0.1;
@@ -257,6 +258,8 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
   const characterCount = commentText.length;
   const characterProgress = characterCount / 500;
   const isNearLimit = characterProgress > 0.8;
+
+  const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
   return (
     <Animated.View
@@ -313,13 +316,12 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
 
           {/* Bottom Bar */}
           {isExpanded && (
-            <Animated.View
-              entering={FadeInUp.duration(300)}
-              className="px-5 justify-center  py-3 border-t border-white/5"
-            >
+            <Animated.View className="px-5 justify-center py-3 border-t border-white/5">
               <View className="flex-row-reverse justify-between items-center">
                 {/* Character Count with Progress */}
                 <Animated.View
+                  entering={FadeInRight.duration(200)}
+                  exiting={FadeOutRight.duration(200)}
                   style={charCountAnimatedStyle}
                   className="flex-row-reverse items-center gap-2"
                 >
@@ -365,49 +367,66 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
                   )}
 
                   {/* Submit Button */}
-                  <Animated.View
-                    layout={LinearTransition}
-                    style={submitButtonAnimatedStyle}
-                  >
-                    <Pressable
-                      onPress={handleSubmitComment}
-                      disabled={isButtonDisabled}
-                      className={`px-5 py-3 rounded-full flex-row items-center gap-2 ${
-                        isButtonDisabled ? "bg-white/10" : "bg-sky-500"
-                      }`}
-                      style={({ pressed }) => ({
-                        opacity: pressed && !isButtonDisabled ? 0.9 : 1,
-                        transform:
-                          pressed && !isButtonDisabled
-                            ? [{ scale: 0.98 }]
-                            : [{ scale: 1 }],
-                      })}
+                  {isExpanded && (
+                    <Animated.View
+                      layout={LinearTransition.springify()
+                        .damping(15)
+                        .stiffness(150)}
+                      entering={FadeInLeft.duration(300)}
+                      exiting={FadeOutLeft.duration(200)}
                     >
-                      {isSubmitting ? (
-                        <>
-                          <ActivityIndicator size="small" color="#fff" />
-                          <Text className="text-white font-ibm-plex-arabic-medium text-sm">
-                            جاري الإرسال...
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          <Ionicons
-                            name="send"
-                            size={16}
-                            color={isButtonDisabled ? "#6B7280" : "#fff"}
-                          />
-                          <Text
-                            className={`font-ibm-plex-arabic-medium text-sm ${
-                              isButtonDisabled ? "text-gray-400" : "text-white"
-                            }`}
-                          >
-                            إرسال
-                          </Text>
-                        </>
-                      )}
-                    </Pressable>
-                  </Animated.View>
+                      <AnimatedPressable
+                        layout={LinearTransition.springify()
+                          .damping(15)
+                          .stiffness(150)}
+                        onPress={handleSubmitComment}
+                        disabled={isButtonDisabled}
+                        className={`px-5 py-3 rounded-full flex-row items-center gap-2 ${
+                          isButtonDisabled ? "bg-white/10" : "bg-sky-500"
+                        }`}
+                        style={({ pressed }) => ({
+                          opacity: pressed && !isButtonDisabled ? 0.9 : 1,
+                          transform:
+                            pressed && !isButtonDisabled
+                              ? [{ scale: 0.98 }]
+                              : [{ scale: 1 }],
+                        })}
+                      >
+                        <Animated.View
+                          layout={LinearTransition.springify()
+                            .damping(15)
+                            .stiffness(150)}
+                          className="flex-row items-center gap-2"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <ActivityIndicator size="small" color="#fff" />
+                              <Text className="text-white font-ibm-plex-arabic-medium text-sm">
+                                جاري الإرسال...
+                              </Text>
+                            </>
+                          ) : (
+                            <>
+                              <Ionicons
+                                name="send"
+                                size={16}
+                                color={isButtonDisabled ? "#6B7280" : "#fff"}
+                              />
+                              <Text
+                                className={`font-ibm-plex-arabic-medium text-sm ${
+                                  isButtonDisabled
+                                    ? "text-gray-400"
+                                    : "text-white"
+                                }`}
+                              >
+                                إرسال
+                              </Text>
+                            </>
+                          )}
+                        </Animated.View>
+                      </AnimatedPressable>
+                    </Animated.View>
+                  )}
                 </View>
               </View>
             </Animated.View>

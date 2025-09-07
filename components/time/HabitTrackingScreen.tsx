@@ -273,7 +273,6 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        className="py-20"
       >
         {/* Progress Section */}
         <View style={styles.progressSection}>
@@ -325,7 +324,7 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
           )}
         </View>
 
-        <View style={{ height: 200 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );

@@ -8,13 +8,16 @@ import {
   Pressable,
 } from "react-native";
 import { SimpleBundleCard } from "@/components/tracking/SimpleBundleCard";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { useCurrentPrayer } from "@/lib/prayers";
 import { useBundlesStore } from "@/store/bundlesStore";
 import { useRouter } from "expo-router";
 
 export default function BundleTrackingScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const currentPrayer = useCurrentPrayer();
   const isBundlesHydrated = useBundlesStore((s) => s.isHydrated);
   const bundles = useBundlesStore((s) => s.bundles);
   const initializeBundles = useBundlesStore.getState().initialize;
@@ -38,8 +41,7 @@ export default function BundleTrackingScreen() {
       setRefreshing(false);
     }
   }, [isBundlesHydrated]);
-  const bundles2 = useBundlesStore.getState().bundles;
-  console.log("bundles2", bundles2);
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <ScrollView
