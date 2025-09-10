@@ -1,7 +1,6 @@
 import { AuthProvider } from "@/lib/auth";
 import { usePrayerInitialization } from "@/hooks/usePrayerInitialization";
 import { useHabitInitialization } from "@/lib/useHabitInitialization";
-import "react-native-reanimated";
 import {
   // Thin (100)
   IBMPlexSansArabic_100Thin,
