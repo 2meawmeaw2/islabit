@@ -38,10 +38,22 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "يحتاج التطبيق الى التعرف على موقعك لتحديد أوقات الصلاة"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8d5aae5c-a83c-4248-a950-6de32c92b5f4"
+      }
     }
   }
 }

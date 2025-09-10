@@ -13,7 +13,7 @@ export default function TabsLayout() {
         options={{
           title: "الكل",
           headerShown: false,
-          animation: "ios_from_left",
+          animation: "ios_from_right",
         }}
       />
 
@@ -32,7 +32,7 @@ export default function TabsLayout() {
         options={{
           headerShown: false,
           title: "تفاصيل العادة",
-          animation: "ios_from_right",
+          animation: "ios_from_left",
         }}
       />
 
@@ -41,7 +41,7 @@ export default function TabsLayout() {
         options={{
           headerShown: false,
           title: "التتبع",
-          animation: "ios_from_right",
+          animation: "ios_from_left",
         }}
       />
       <Stack.Screen
@@ -49,7 +49,7 @@ export default function TabsLayout() {
         options={{
           headerShown: false,
           title: "تتبع العادات",
-          animation: "ios_from_right",
+          animation: "ios_from_left",
         }}
       />
       <Stack.Screen
@@ -57,7 +57,7 @@ export default function TabsLayout() {
         options={{
           headerShown: false,
           title: "تتبع الحزمة",
-          animation: "ios_from_right",
+          animation: "ios_from_left",
         }}
       />
       <Stack.Screen

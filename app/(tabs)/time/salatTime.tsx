@@ -10,6 +10,8 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import * as Location from "expo-location";
+import * as Network from "expo-network";
 import { Ionicons } from "@expo/vector-icons";
 import {
   fmtArabicDateDay,
@@ -37,7 +39,19 @@ interface PrayerDay {
   date: Date;
   prayers: Prayer[];
 }
-
+interface NominatimResponse {
+  place_id: number;
+  address: {
+    town?: string;
+    village?: string;
+    city?: string;
+    municipality?: string;
+    county?: string;
+    state?: string;
+    country?: string;
+  };
+  display_name: string;
+}
 const PrayerTimesScreen = () => {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const { coords: cachedCoords, ensureCoords } = useLocationStore();
@@ -47,6 +61,149 @@ const PrayerTimesScreen = () => {
     coordinates: storedCoords,
     initializePrayers,
   } = usePrayerTimesStore();
+  const [city, setCity] = useState<string | null>(null);
+  const [cityError, setCityError] = useState<string | null>(null);
+
+  const getCityWithNominatim = async (
+    latitude: number,
+    longitude: number,
+    signal?: AbortSignal
+  ): Promise<string | null> => {
+    const url = new URL("https://nominatim.openstreetmap.org/reverse");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("lat", String(latitude));
+    url.searchParams.set("lon", String(longitude));
+    url.searchParams.set("accept-language", "ar");
+
+    try {
+      const res = await fetch(url.toString(), {
+        signal,
+        headers: {
+          "User-Agent": "HabitTrackerApp/1.0", // Required by Nominatim
+          Accept: "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        console.error(`Nominatim API error: ${res.status}`);
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = (await res.json()) as NominatimResponse;
+      console.log("Nominatim response:", JSON.stringify(data, null, 2));
+
+      // Try to get the most specific location name
+      const name =
+        data?.address?.town ??
+        data?.address?.village ??
+        data?.address?.city ??
+        data?.address?.municipality ??
+        data?.address?.county ??
+        data?.address?.state ??
+        null;
+
+      if (!name) {
+        console.log("No location name found in response");
+      }
+
+      return name;
+    } catch (e) {
+      if (e?.name === "AbortError") {
+        console.log("Request was aborted");
+        throw e;
+      }
+      console.error("Error fetching location:", e);
+      throw new Error("Failed to fetch location data");
+    }
+  };
+
+  const getCityWithExpoLocation = async (
+    latitude: number,
+    longitude: number
+  ): Promise<string | null> => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        throw new Error("Location permission not granted");
+      }
+
+      const result = await Location.reverseGeocodeAsync(
+        {
+          latitude,
+          longitude,
+        },
+        { language: "ar" }
+      );
+
+      if (result && result.length > 0) {
+        return (
+          result[0].city ||
+          result[0].district ||
+          result[0].subregion ||
+          result[0].region ||
+          null
+        );
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting location with Expo:", error);
+      return null;
+    }
+  };
+
+  // Effect: refetch whenever coords change, cancel on unmount
+  useEffect(() => {
+    if (!cachedCoords?.lat || !cachedCoords?.lng) return;
+
+    const controller = new AbortController();
+    setCityError(null);
+
+    (async () => {
+      try {
+        // Check network status
+        const networkState = await Network.getNetworkStateAsync();
+
+        let name: string | null = null;
+
+        if (
+          networkState.isConnected &&
+          networkState.type === Network.NetworkStateType.WIFI
+        ) {
+          // Try Nominatim first if we have WiFi
+          name = await getCityWithNominatim(
+            cachedCoords.lat,
+            cachedCoords.lng,
+            controller.signal
+          );
+        }
+
+        // If Nominatim failed or we're not on WiFi, try Expo Location
+        if (!name) {
+          name = await getCityWithExpoLocation(
+            cachedCoords.lat,
+            cachedCoords.lng
+          );
+        }
+
+        if (name) {
+          setCity(name);
+        } else {
+          setCityError("تعذر جلب المدينة");
+        }
+      } catch (e: any) {
+        if (e?.name !== "AbortError") setCityError("تعذر جلب المدينة");
+      }
+    })();
+
+    return () => controller.abort();
+  }, [cachedCoords]);
+
+  // Initialize today's store-based prayers once we have coordinates
+  useEffect(() => {
+    if (!cachedCoords) {
+      ensureCoords();
+    }
+  }, [cachedCoords, ensureCoords]);
 
   // Initialize today's store-based prayers once we have coordinates
   useEffect(() => {
@@ -56,17 +213,6 @@ const PrayerTimesScreen = () => {
       initializePrayers(cachedCoords.lat, cachedCoords.lng);
     }
   }, [cachedCoords, isInitialized, storedCoords, initializePrayers, days]);
-
-  // Map store prayer name to Arabic label
-  const nameToArabic: Record<string, string> = {
-    fajr: "الفجر",
-    sunrise: "الشروق",
-    dhuhr: "الظهر",
-    asr: "العصر",
-    maghrib: "المغرب",
-    isha: "العشاء",
-  };
-
   // Build prayerDay either from store (today) or computed (other dates)
   const prayerDay = useMemo<PrayerDay | undefined>(() => {
     if (!cachedCoords) return undefined;
@@ -135,7 +281,7 @@ const PrayerTimesScreen = () => {
             </TouchableOpacity>
             <View style={styles.locationContainer}>
               <Text className="text-white text-3xl font-ibm-plex-arabic-medium">
-                الرغاية
+                {city}
               </Text>
               <Ionicons name="location-sharp" size={24} color="#00AEEF" />
             </View>
