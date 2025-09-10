@@ -60,6 +60,14 @@ export default function TabsLayout() {
           animation: "ios_from_right",
         }}
       />
+      <Stack.Screen
+        name="salatTime"
+        options={{
+          headerShown: false,
+          title: "وقت الصلاة",
+          animation: "ios_from_left",
+        }}
+      />
     </Stack>
   );
 }

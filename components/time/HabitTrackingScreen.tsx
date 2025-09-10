@@ -30,16 +30,40 @@ const DAY_NAMES = [
 ];
 
 type HabitTrackingScreenProps = {
-  habit: HabitProps;
+  habit: HabitProps & { bundleTitle?: string; bundleColor?: string };
+};
+
+// Bundle Name Component - displays when habit is from a bundle
+const BundleNameDisplay = ({
+  bundleTitle,
+  bundleColor = "#8B5CF6",
+}: {
+  bundleTitle?: string;
+  bundleColor?: string;
+}) => {
+  if (!bundleTitle) return null;
+
+  return (
+    <View style={styles.bundleContainer}>
+      <Text
+        className="font-ibm-plex-arabic-medium text-sm"
+        style={{ color: `${bundleColor}CC` }}
+      >
+        {bundleTitle}
+      </Text>
+    </View>
+  );
 };
 
 // Header Component with back button and title
 const Header = ({
   habit,
   onBack,
+  habitColor = "#00AEEF",
 }: {
-  habit: HabitProps;
+  habit: HabitProps & { bundleTitle?: string; bundleColor?: string };
   onBack: () => void;
+  habitColor?: string;
 }) => {
   const router = useRouter();
 
@@ -52,11 +76,13 @@ const Header = ({
 
         <View style={styles.titleContainer}>
           <Text className="text-white font-ibm-plex-arabic-bold text-xl text-center">
-            تتبع العادة
-          </Text>
-          <Text className="text-slate-400 font-ibm-plex-arabic-medium text-sm text-center mt-1">
             {habit.title}
           </Text>
+
+          <BundleNameDisplay
+            bundleTitle={habit.bundleTitle}
+            bundleColor={habitColor}
+          />
         </View>
 
         <Pressable
@@ -70,7 +96,7 @@ const Header = ({
           style={styles.backButton}
           hitSlop={12}
         >
-          <Ionicons name="create-outline" size={22} color="#00AEEF" />
+          <Ionicons name="create-outline" size={22} color={habitColor} />
         </Pressable>
       </View>
     </View>
@@ -78,7 +104,13 @@ const Header = ({
 };
 
 // Progress Circle Component with animated percentage
-const ProgressCircle = ({ percentage }: { percentage: number }) => {
+const ProgressCircle = ({
+  percentage,
+  habitColor = "#00AEEF",
+}: {
+  percentage: number;
+  habitColor?: string;
+}) => {
   const animatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
@@ -100,7 +132,7 @@ const ProgressCircle = ({ percentage }: { percentage: number }) => {
           style={[
             styles.progressFill,
             animatedStyle,
-            { backgroundColor: "#00AEEF" },
+            { backgroundColor: habitColor + "85" },
           ]}
         />
         <View style={styles.progressCenter}>
@@ -144,7 +176,13 @@ const StatCard = ({
 );
 
 // Days Display Component
-const DaysDisplay = ({ selectedDays }: { selectedDays: HabitDay[] }) => (
+const DaysDisplay = ({
+  selectedDays,
+  habitColor = "#00AEEF",
+}: {
+  selectedDays: HabitDay[];
+  habitColor?: string;
+}) => (
   <View style={styles.daysContainer}>
     <Text className="text-white font-ibm-plex-arabic-semibold text-right text-lg mb-3">
       أيام التنفيذ
@@ -155,11 +193,19 @@ const DaysDisplay = ({ selectedDays }: { selectedDays: HabitDay[] }) => (
         return (
           <View
             key={index}
-            style={[styles.dayPill, isSelected && styles.dayPillActive]}
+            style={[
+              styles.dayPill,
+              isSelected && {
+                backgroundColor: `${habitColor}20`,
+                borderColor: `${habitColor}40`,
+              },
+            ]}
           >
             <Text
               className="font-ibm-plex-arabic-medium  text-sm"
-              style={{ color: isSelected ? "#E5F8FF" : "#64748B" }}
+              style={{
+                color: isSelected ? habitColor : "#64748B",
+              }}
             >
               {dayName}
             </Text>
@@ -173,8 +219,10 @@ const DaysDisplay = ({ selectedDays }: { selectedDays: HabitDay[] }) => (
 // Prayers Display Component
 const PrayersDisplay = ({
   selectedPrayers,
+  habitColor = "#00AEEF",
 }: {
   selectedPrayers: PrayerKey[];
+  habitColor?: string;
 }) => (
   <View style={styles.prayersContainer}>
     <Text className="text-white font-ibm-plex-arabic-semibold text-right text-lg mb-3">
@@ -185,8 +233,20 @@ const PrayersDisplay = ({
         selectedPrayers.map((prayerKey) => {
           const prayer = PRAYERS.find((p) => p.key === prayerKey);
           return prayer ? (
-            <View key={prayerKey} style={styles.prayerBadge}>
-              <Text className="font-ibm-plex-arabic-medium text-text-primary text-sm text-center">
+            <View
+              key={prayerKey}
+              style={[
+                styles.prayerBadge,
+                {
+                  backgroundColor: `${habitColor}20`,
+                  borderColor: `${habitColor}40`,
+                },
+              ]}
+            >
+              <Text
+                className="font-ibm-plex-arabic-medium text-sm text-center"
+                style={{ color: habitColor }}
+              >
                 {prayer.name}
               </Text>
             </View>
@@ -212,6 +272,9 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
   const router = useRouter();
   console.log(habit);
   type CompletionRecord = { date: string; prayer?: string };
+
+  // Get habit color with fallback
+  const habitColor = habit.category?.hexColor || "#00AEEF";
 
   const completedDatesForCalendar = useMemo(() => {
     const relatedPrayers = (habit.relatedSalat || []) as string[];
@@ -268,16 +331,26 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
   }, [habit]);
   return (
     <SafeAreaView style={styles.safe}>
-      <Header habit={habit} onBack={() => router.navigate("/(tabs)/time")} />
+      <Header
+        habit={habit}
+        onBack={() => router.navigate("/(tabs)/time")}
+        habitColor={habitColor}
+      />
 
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        className="py-20"
+        className="pb-20 pt-10"
       >
         {/* Progress Section */}
         <View style={styles.progressSection}>
-          <ProgressCircle percentage={stats.completionPercentage} />
+          <Text className="text-white font-ibm-plex-arabic-semibold text-center mb-8 text-xl ">
+            تقدم الأسبوع
+          </Text>
+          <ProgressCircle
+            percentage={stats.completionPercentage}
+            habitColor={habitColor}
+          />
         </View>
 
         {/* Statistics Section */}
@@ -290,27 +363,34 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
               icon="calendar-outline"
               title="إجمالي المكتمل"
               value={stats.totalCompleted}
+              color={habitColor}
             />
             <StatCard
               icon="flame"
               title="أفضل سلسلة"
               value={habit.bestStreak ?? 0}
-              color="#F59E0B"
+              color={habitColor}
             />
             <StatCard
               icon="trending-up"
               title="السلسلة الحالية"
               value={habit.streak}
-              color="#10B981"
+              color={habitColor}
             />
           </View>
         </View>
 
         {/* Details Section */}
         <View style={styles.detailsSection}>
-          <DaysDisplay selectedDays={(habit.relatedDays || []) as HabitDay[]} />
+          <DaysDisplay
+            selectedDays={(habit.relatedDays || []) as HabitDay[]}
+            habitColor={habitColor}
+          />
           <View style={styles.separator} />
-          <PrayersDisplay selectedPrayers={habit.relatedSalat || []} />
+          <PrayersDisplay
+            selectedPrayers={habit.relatedSalat || []}
+            habitColor={habitColor}
+          />
         </View>
 
         <View style={styles.calendarContainer}>
@@ -320,6 +400,7 @@ export const HabitTrackingScreen: React.FC<HabitTrackingScreenProps> = ({
               variant="embedded"
               habitId={habit.id}
               completedDates={completedDatesForCalendar}
+              color={habitColor}
               shouldDoOnWeekdays={habit.relatedDays}
             />
           )}
@@ -358,8 +439,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E293B",
   },
   titleContainer: {
+    marginTop: 10,
     flex: 1,
     alignItems: "center",
+  },
+
+  // Bundle Display
+  bundleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "rgba(139, 92, 246, 0.08)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(139, 92, 246, 0.15)",
+  },
+  bundleIcon: {
+    marginRight: 6,
   },
 
   // Progress Section
@@ -384,7 +483,7 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 100,
     borderWidth: 8,
-    borderColor: "#334155",
+    borderColor: "transparent",
   },
   progressFill: {
     position: "absolute",
@@ -469,10 +568,6 @@ const styles = StyleSheet.create({
     borderColor: "#334155",
     alignItems: "center",
   },
-  dayPillActive: {
-    backgroundColor: "#00AEEF",
-    borderColor: "#00AEEF",
-  },
 
   // Prayers Display
   prayersContainer: {
@@ -488,9 +583,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: "#00AEEF",
-    borderWidth: 1,
-    borderColor: "#00AEEF",
     minWidth: 80,
     alignItems: "center",
   },

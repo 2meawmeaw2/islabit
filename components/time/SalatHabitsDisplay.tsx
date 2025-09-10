@@ -23,7 +23,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import PercentageCircle from "../PercentageCircle";
-
+import { usePrayerTimesStore } from "@/store/prayerTimesStore";
+import { dayjs } from "@/lib/daysjs";
 type SalatHabit = {
   id: string;
   title: string;
@@ -46,6 +47,7 @@ type Props = {
   onToggleHabit: (id: string, completed: boolean) => void;
   onHabitPress: (habit: SalatHabit) => void;
   onAddHabit?: () => void;
+  prayerKey: string;
 };
 
 // Priority indicator function removed - no longer needed
@@ -56,7 +58,14 @@ type Props = {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const SalatHabitsDisplay: React.FC<Props> = memo(
-  ({ salatName, habits, onToggleHabit, onHabitPress, onAddHabit }) => {
+  ({
+    salatName,
+    habits,
+    onToggleHabit,
+    onHabitPress,
+    onAddHabit,
+    prayerKey,
+  }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [wasAllCompleted, setWasAllCompleted] = useState(false);
     const reducedMotion = useReducedMotion();
@@ -138,6 +147,9 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
     const chevronAnimatedStyle = useAnimatedStyle(() => ({
       transform: [{ rotate: chevronRotation.value + "deg" }],
     }));
+    const { days } = usePrayerTimesStore();
+    console.log(",eawwea", days);
+    console.log("meaw");
 
     return (
       <Animated.View
@@ -172,7 +184,9 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
             <View className="flex-row-reverse items-center gap-2">
               <View className="flex-row-reverse items-center gap-1  px-2 py-1 rounded-lg">
                 <Text className="text-slate-200 text-xs font-ibm-plex-arabic-light">
-                  12:44
+                  {dayjs(
+                    days[0].prayers.find((p) => p.name === prayerKey)?.time
+                  ).format("HH:mm")}
                 </Text>
               </View>
               {completionPercentage === 100 ? (

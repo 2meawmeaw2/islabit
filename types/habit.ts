@@ -39,6 +39,7 @@ export interface HabitProps {
   relatedSalat: PrayerKey[]; // (Optional) Name of the related prayer, if any
   relatedDays: number[]; // (Optional) Days of the week related to the habit (e.g., ["Monday", "Thursday"])
   category?: Category; // Category for the habit
+  color?: string;
 }
 
 export interface HabitsShopHabit {
@@ -46,10 +47,14 @@ export interface HabitsShopHabit {
   title: string; // Name or title of the habit
   benefit: string[];
   quote: string; // Motivational or related quote
-  whyDescription: string; // Description of the habit
-  suggestedRelatedSalat: import("./salat").Prayer[]; // (Optional) Name of the related prayer, if any
-  suggestedRelatedDays?: WeekDayAr[]; // (Optional) Days of the week related to the habit (e.g., ["Monday", "Thursday"])
+  description: string; // Description of the habit
+  suggestedRelatedSalat: import("./salat").PrayerKey[]; // (Optional) Name of the related prayer, if any
+  suggestedRelatedDays?: string[]; //["1","2","3","4","5","6","7"]
   categories: Category[]; // Array of category IDs that this habit belongs to
+  color: string;
+  comments?: import("@/lib/habits-api").HabitComment[];
+  likes?: string[];
+  enrolled_users?: string[];
 }
 
 export type HabitDay = 0 | 1 | 2 | 3 | 4 | 5 | 6;

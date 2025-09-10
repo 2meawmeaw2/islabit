@@ -27,27 +27,6 @@ export default function RootLayout() {
           animation: "slide_from_right",
         }}
       />
-      <Stack.Screen
-        name="explore-habits"
-        options={{
-          headerShown: false,
-          title: "اكتشف العادات",
-          animation: "slide_from_right",
-        }}
-      />
-      <Stack.Screen
-        name="FreeCommit"
-        options={{ headerShown: false, animation: "slide_from_left" }}
-      />
-
-      <Stack.Screen
-        name="prayer-tracker"
-        options={{ headerShown: false, title: "العدّاد", animation: "fade" }}
-      />
-      <Stack.Screen
-        name="reflection"
-        options={{ headerShown: false, title: "العدّاد", animation: "fade" }}
-      />
 
       <Stack.Screen
         name="(habit)"

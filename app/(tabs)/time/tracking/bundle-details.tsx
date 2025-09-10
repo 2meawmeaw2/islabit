@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { format, parseISO } from "date-fns";
 import tokens from "@/tokens";
+import { SimpleHabitCard } from "@/components/tracking/SimpleHabitCard";
 
 export default function BundleDetailsScreen() {
   const router = useRouter();
@@ -313,45 +314,19 @@ export default function BundleDetailsScreen() {
           </Text>
 
           {(bundle.habits || []).map((habit, index) => (
-            <Animated.View
+            <SimpleHabitCard
               key={habit.id}
-              entering={FadeInRight.duration(300).delay(index * 100)}
-              className="bg-fore p-4 rounded-2xl mb-3"
-            >
-              <View className="flex-row-reverse items-center justify-between">
-                <View className="flex-1">
-                  <Text className="text-text-primary font-ibm-plex-arabic-medium text-base text-right">
-                    {habit.title}
-                  </Text>
-
-                  <View className="flex-row-reverse items-center mt-1">
-                    {habit.streak > 0 && (
-                      <View className="flex-row-reverse items-center mr-2">
-                        <MaterialCommunityIcons
-                          name="fire"
-                          size={14}
-                          color="#F59E0B"
-                        />
-                        <Text className="text-amber-500 font-ibm-plex-arabic-medium text-xs mr-1">
-                          {habit.streak} تتابع
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-
-                <View
-                  style={{ backgroundColor: `${bundle.color}15` }}
-                  className="rounded-full p-1"
-                >
-                  <MaterialCommunityIcons
-                    name="chevron-left"
-                    size={18}
-                    color={bundle.color}
-                  />
-                </View>
-              </View>
-            </Animated.View>
+              title={habit.title}
+              subtitle={habit.quote}
+              streak={habit.streak}
+              color={bundle.color}
+              onPress={() =>
+                router.push({
+                  pathname: "/time/habitDetails",
+                  params: { habit: JSON.stringify(habit) },
+                })
+              }
+            />
           ))}
         </Animated.View>
       </ScrollView>

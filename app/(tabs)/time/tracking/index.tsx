@@ -15,14 +15,12 @@ import Animated, {
 } from "react-native-reanimated";
 import BundleTrackingPlaceholder from "./bundle";
 import HabitsTrackingPlaceholder from "./habits";
+import { SafeAreaView } from "react-native-safe-area-context";
 export default function TrackingChoiceScreen() {
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const topScrollRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const profile = useUserStore.getState().profile;
-  console.log("profile in tracking index", profile);
-  // Animated segmented control shared values
   const segmentW = useSharedValue(0);
   const translateX = useSharedValue(0);
 
@@ -70,7 +68,7 @@ export default function TrackingChoiceScreen() {
     transform: [{ translateX: translateX.value }],
   }));
   return (
-    <View className="flex-1 bg-bg">
+    <SafeAreaView className="flex-1 bg-bg">
       <View className="px-4 pt-4 pb-2">
         <Text className="text-text-primary font-ibm-plex-arabic-bold text-2xl text-right mb-3">
           التتبع
@@ -90,18 +88,6 @@ export default function TrackingChoiceScreen() {
             </Text>
             <Text className="text-text-primary font-ibm-plex-arabic-medium text-base text-center opacity-90">
               العادات
-            </Text>
-          </View>
-
-          <View
-            style={{ width: 120, height: 120, backgroundColor: "#D97706" }}
-            className="justify-center items-center px-4 py-6 rounded-3xl mx-3"
-          >
-            <Text className="text-text-primary font-ibm-plex-arabic-bold text-4xl text-center mb-2">
-              {useUserStore.getState().profile?.points}
-            </Text>
-            <Text className="text-text-primary font-ibm-plex-arabic-medium text-base text-center opacity-90">
-              نقاطي
             </Text>
           </View>
 
@@ -187,6 +173,6 @@ export default function TrackingChoiceScreen() {
           <HabitsTrackingPlaceholder />
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

@@ -70,6 +70,17 @@ export const fmtArabicDateMonthAndNumber = (d: Date) =>
     day: "numeric",
     month: "long",
   }).format(d);
+export const fmtArabicDateDay = (d: Date) =>
+  new Intl.DateTimeFormat("ar", {
+    weekday: "long",
+  }).format(d);
+export const fmtArabicDateMonthAndNumberAndYear = (d: Date) =>
+  new Intl.DateTimeFormat("ar-u-nu-latn", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(d);
+
 // app/lib/dates.ts
 export const todayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(

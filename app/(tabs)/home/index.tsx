@@ -15,10 +15,11 @@ const AllHabits = () => {
   const handleHabitTypePress = (typeId: string) => {
     // Navigate to explore habits page with category filter
     router.push({
-      pathname: "/home/explore-habits",
+      pathname: "/home/(habit)",
       params: { category: typeId },
     });
   };
+  console.log("dsadsadasd", bundles);
 
   const handleBundlePress = (bundle: any) => {
     // Serialize the bundle object to JSON string
@@ -33,7 +34,7 @@ const AllHabits = () => {
   const handleTrendingHabitPress = (habitId: string) => {
     // Navigate to habit details or add to user's habits
     router.push({
-      pathname: "/home/explore-habits",
+      pathname: "/home/(habit)",
       params: { habitId: String(habitId) },
     });
   };

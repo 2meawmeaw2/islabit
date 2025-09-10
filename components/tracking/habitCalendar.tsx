@@ -56,6 +56,7 @@ type HabitCalendarProps = {
   completedDates?: string[]; // Optional initial completed dates
   // Weekday schedule: Sunday = 0 … Saturday = 6 (Sunday-first calendar)
   shouldDoOnWeekdays?: number[];
+  color?: string;
   readonly?: boolean; // If true, the user can't toggle dates
 };
 
@@ -64,6 +65,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
   habitId,
   completedDates = [],
   shouldDoOnWeekdays,
+  color = "#00AEEF",
   readonly = false,
 }) => {
   // Get today's date for default current view
@@ -242,7 +244,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
           </Text>
           <Text
             style={{
-              color: HEADER_SUB_COLOR,
+              color: color + "90",
               textAlign: "center",
             }}
             className="font-ibm-plex-arabic text-sm"
@@ -368,7 +370,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({
                     borderRadius: (DAY_SIZE - 4) / 2,
                     justifyContent: "center",
                     alignItems: "center",
-                    backgroundColor: completed ? "#00AEEF" : "transparent",
+                    backgroundColor: completed ? color : "transparent",
                     borderWidth: todayRing ? 2 : 0,
                     borderColor: todayRing ? DAY_TODAY_BORDER : "transparent",
                     opacity: shouldDo ? 1 : 0.3,

@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/lib/auth";
+import { usePrayerInitialization } from "@/hooks/usePrayerInitialization";
 import { useHabitInitialization } from "@/lib/useHabitInitialization";
 import {
   // Thin (100)
@@ -93,6 +94,9 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
+  // Initialize prayer times
+  usePrayerInitialization();
+
   return (
     <AuthProvider>
       <Stack>

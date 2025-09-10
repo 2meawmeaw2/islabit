@@ -26,15 +26,28 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth";
-import { addBundleComment } from "@/lib/bundle-comments";
-import { scrollTo } from "react-native-reanimated";
 
 interface CommentInputProps {
-  bundleId: string;
-  onCommentAdded: () => void;
+  onSubmit: (text: string) => Promise<{ error?: string; success?: boolean }>;
+  title?: string;
+  color?: string;
+  placeholder?: string;
+  focusedPlaceholder?: string;
+  helpText?: string;
+  onCommentAdded?: () => void;
+  className?: string;
 }
 
-export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
+export function CommentInput({
+  color,
+  onSubmit,
+  title,
+  placeholder = "اكتب تعليقاً مفيداً...",
+  focusedPlaceholder = "شاركنا رأيك الصادق...",
+  helpText = "اذكر ما أعجبك، ما يمكن تحسينه، أو أي معلومات مفيدة للآخرين",
+  onCommentAdded,
+  className = "px-6 mb-6",
+}: CommentInputProps) {
   const { user } = useAuth();
   const [commentText, setCommentText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,19 +100,9 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
 
   const inputContainerAnimatedStyle = useAnimatedStyle(() => ({
     height: withSpring(containerHeight.value, { damping: 15, stiffness: 150 }),
-    borderColor: `rgba(255, 255, 255, ${withTiming(borderOpacity.value, { duration: 300 })})`,
-  }));
-
-  const submitButtonAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: withTiming(submitButtonOpacity.value, { duration: 250 }),
-    transform: [
-      {
-        scale: withSpring(submitButtonScale.value, {
-          damping: 12,
-          stiffness: 200,
-        }),
-      },
-    ],
+    borderColor: `rgba(255, 255, 255, ${withTiming(borderOpacity.value, {
+      duration: 300,
+    })})`,
   }));
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -120,8 +123,8 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
   const handleContentSizeChange = (event: any) => {
     const { height } = event.nativeEvent.contentSize;
     const newHeight = Math.max(
-      isExpanded ? Math.max(height + 80, 120) : 60, // 80px for padding and controls
-      Math.min(height + 80, 250) // Max height 250px
+      isExpanded ? Math.max(height + 80, 120) : 60,
+      Math.min(height + 80, 250)
     );
 
     setInputHeight(newHeight);
@@ -134,7 +137,6 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
     setIsFocused(true);
     setIsExpanded(true);
 
-    // Calculate initial height based on current content
     const baseHeight = Math.max(120, inputHeight);
     containerHeight.value = baseHeight;
 
@@ -169,7 +171,6 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
   const handleTextChange = (text: string) => {
     setCommentText(text);
 
-    // Subtle haptic for typing (throttled)
     if (text.length % 15 === 0 && text.length > 0) {
       triggerHaptic("light");
     }
@@ -190,14 +191,13 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
     triggerHaptic("medium");
     setIsSubmitting(true);
 
-    // Button press animation
     submitButtonScale.value = withSequence(
       withTiming(0.95, { duration: 100 }),
       withTiming(1, { duration: 100 })
     );
 
     try {
-      const result = await addBundleComment(bundleId, commentText.trim());
+      const result = await onSubmit(commentText.trim());
 
       if (result.error) {
         triggerHaptic("warning");
@@ -205,7 +205,6 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
       } else {
         triggerHaptic("success");
 
-        // Success animation sequence
         backgroundScale.value = withSequence(
           withTiming(1.05, { duration: 150 }),
           withTiming(1, { duration: 200 })
@@ -225,11 +224,10 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
         headerOpacity.value = 1;
         charCountOpacity.value = 0;
 
-        // Dismiss keyboard
         Keyboard.dismiss();
         inputRef.current?.blur();
 
-        onCommentAdded();
+        onCommentAdded?.();
         Alert.alert("تم", "تم إضافة تعليقك بنجاح ✨");
       }
     } catch (err) {
@@ -264,16 +262,18 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
     <Animated.View
       entering={FadeInUp.delay(1200).duration(800).springify()}
       exiting={FadeOutDown.duration(400)}
-      className="px-6 mb-6"
+      className={className}
     >
       {/* Header with subtle animation */}
-      <Animated.View style={headerAnimatedStyle}>
-        <View className="flex-row-reverse items-center justify-between mb-4">
-          <Text className="text-text-brand font-ibm-plex-arabic-bold text-lg text-right">
-            شارك تجربتك
-          </Text>
-        </View>
-      </Animated.View>
+      {title && (
+        <Animated.View style={headerAnimatedStyle}>
+          <View className="flex-row-reverse items-center justify-between mb-4">
+            <Text className="text-text-brand font-ibm-plex-arabic-bold text-lg text-right">
+              {title}
+            </Text>
+          </View>
+        </Animated.View>
+      )}
 
       {/* Main Input Container */}
       <Animated.View
@@ -285,7 +285,7 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
           className="border-2 rounded-2xl"
         >
           {/* Input Field */}
-          <View className="px-5 mt-1  flex-1">
+          <View className="px-5 mt-1 flex-1">
             <TextInput
               ref={inputRef}
               value={commentText}
@@ -293,11 +293,7 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
               onContentSizeChange={handleContentSizeChange}
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
-              placeholder={
-                isFocused
-                  ? "شاركنا رأيك الصادق..."
-                  : "اكتب تعليقاً مفيداً عن هذه الرحلة..."
-              }
+              placeholder={isFocused ? focusedPlaceholder : placeholder}
               placeholderTextColor={isFocused ? "#6B7280" : "#9CA3AF"}
               multiline={true}
               textAlign="right"
@@ -317,7 +313,7 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
           {isExpanded && (
             <Animated.View
               entering={FadeInUp.duration(300)}
-              className="px-5 justify-center  py-3 border-t border-white/5"
+              className="px-5 justify-center py-3 border-t border-white/5"
             >
               <View className="flex-row-reverse justify-between items-center">
                 {/* Character Count with Progress */}
@@ -370,6 +366,12 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
 
                   {/* Submit Button */}
                   <Animated.View
+                    style={{
+                      backgroundColor: isButtonDisabled
+                        ? "rgba(255,255,255,0.1)"
+                        : color,
+                    }}
+                    className="rounded-full"
                     layout={LinearTransition}
                     entering={FadeInLeft.duration(200)}
                     exiting={FadeOutLeft.duration(200)}
@@ -378,7 +380,7 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
                       onPress={handleSubmitComment}
                       disabled={isButtonDisabled}
                       className={`px-5 py-3 rounded-full flex-row items-center gap-2 ${
-                        isButtonDisabled ? "bg-white/10" : "bg-sky-500"
+                        isButtonDisabled ? "bg-white/10" : "bg-"
                       }`}
                       style={({ pressed }) => ({
                         opacity: pressed && !isButtonDisabled ? 0.9 : 1,
@@ -420,7 +422,7 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
         </Animated.View>
       </Animated.View>
 
-      {/* Helpful Tips (shown when focused for first time) */}
+      {/* Helpful Tips */}
       {isExpanded && (
         <Animated.View
           entering={FadeInUp.delay(500).duration(400)}
@@ -428,7 +430,7 @@ export function CommentInput({ bundleId, onCommentAdded }: CommentInputProps) {
           className="mt-3 px-4"
         >
           <Text className="text-text-disabled font-ibm-plex-arabic-light text-xs text-right leading-5">
-            اذكر ما أعجبك، ما يمكن تحسينه، أو أي معلومات مفيدة للمسافرين الآخرين
+            {helpText}
           </Text>
         </Animated.View>
       )}

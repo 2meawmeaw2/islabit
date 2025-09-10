@@ -111,6 +111,7 @@ function calculateStreaks(
 export interface ExtendedHabitProps extends HabitProps {
   source?: "individual" | "bundle";
   bundleTitle?: string;
+  bundleColor?: string;
   isCompletedForSelectedDay?: boolean;
 }
 
@@ -140,7 +141,6 @@ export const useHabitsStore = create<HabitsState>()(
       habits: [],
       selectedHabitId: null,
       isHydrated: false,
-
       setHabits: (items: ExtendedHabitProps[]) => set({ habits: items }),
 
       selectHabit: (habitId: string | null) =>
@@ -273,6 +273,7 @@ export const useHabitsStore = create<HabitsState>()(
                 id: `bundle_${bundle.id || bundle.title || bundleIndex}_${habit.id || habitIndex}`,
                 source: "bundle" as const,
                 bundleTitle: bundle.title,
+                bundleColor: bundle.color,
               }))
           );
 

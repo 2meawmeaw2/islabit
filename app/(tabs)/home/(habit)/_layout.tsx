@@ -10,7 +10,7 @@ export default function RootLayout() {
         options={{
           headerShown: false,
           title: "العدّاد",
-          animation: "slide_from_left",
+          animation: "slide_from_right",
         }}
       />
       <Stack.Screen
@@ -19,6 +19,16 @@ export default function RootLayout() {
           headerShown: false,
           title: "العدّاد",
           animation: "slide_from_left",
+        }}
+      />
+      <Stack.Screen
+        name="confirmHabitEnroll"
+        options={{
+          headerShown: false,
+          animation: "slide_from_bottom",
+
+          presentation: "modal",
+          title: "العدّاد",
         }}
       />
     </Stack>

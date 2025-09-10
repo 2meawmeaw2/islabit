@@ -12,7 +12,6 @@ function HabitTracking() {
   // State to track if data is still loading
   const [isLoading, setIsLoading] = useState(false);
   // Get habits from the centralized store
-
   // This runs when the component first loads
   useEffect(() => {
     // Function to load the habit data

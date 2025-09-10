@@ -165,7 +165,7 @@ export default function DisplayDays({
   return (
     <View
       style={styles.safe}
-      className=" fixed top-0 mx-2 rounded-bl-2xl rounded-br-sm"
+      className=" fixed top-0 mx-2  rounded-bl-2xl rounded-br-sm"
     >
       <View
         style={styles.containerWrapper}
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bg,
   },
   containerWrapper: {
-    paddingTop: 32,
+    paddingTop: 10,
     paddingHorizontal: 5,
   },
 

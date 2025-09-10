@@ -33,6 +33,7 @@ import {
   getBundleComments,
   BundleComment,
   formatCommentTime,
+  addBundleComment,
 } from "@/lib/bundle-comments";
 
 import { Bundle, toggleBundleLike } from "@/lib/bundles";
@@ -255,7 +256,7 @@ const SingleBundleScreen = () => {
       </SafeAreaView>
     );
   }
-
+  console.log(bundle);
   return (
     <SafeAreaView ref={scrollViewRef} className="flex-1 bg-bg">
       {/* Modern Header */}
@@ -550,7 +551,14 @@ const SingleBundleScreen = () => {
 
           {/* Comment Input Section */}
           <CommentInput
-            bundleId={safeBundle.id}
+            onSubmit={async (text) => {
+              const result = await addBundleComment(safeBundle.id, text);
+              return { error: result.error, success: !result.error };
+            }}
+            title="شارك تجربتك"
+            placeholder="اكتب تعليقاً مفيداً عن هذه الرحلة..."
+            focusedPlaceholder="شاركنا رأيك الصادق..."
+            helpText="اذكر ما أعجبك، ما يمكن تحسينه، أو أي معلومات مفيدة للمسافرين الآخرين"
             onCommentAdded={handleCommentAdded}
           />
 

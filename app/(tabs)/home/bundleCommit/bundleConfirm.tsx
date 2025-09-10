@@ -26,9 +26,14 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Bundle, addBundleToUserCommitedBundles } from "@/lib/bundles";
+import {
+  Bundle,
+  addBundleToUserCommitedBundles,
+  addUserToBundleEnrolledUsers,
+} from "@/lib/bundles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "@/lib/auth";
+import { supabase } from "@/utils/supabase";
 
 const BundleConfirmationScreen = () => {
   const { bundleData } = useLocalSearchParams<{
@@ -163,9 +168,15 @@ const BundleConfirmationScreen = () => {
         ? JSON.parse(existingBundlesData)
         : [];
 
-      // Check if user is already enrolled in this bundle
-      const isAlreadyEnrolled = existingBundles.some(
-        (bundle: any) => bundle.id === safeBundle.id
+      // Check if user is already enrolled in this bundle by checking the bundle's enrolled_users
+      const { data: bundle } = await supabase
+        .from("bundles")
+        .select("enrolled_users")
+        .eq("id", safeBundle.id)
+        .single();
+
+      const isAlreadyEnrolled = bundle?.enrolled_users?.includes(
+        user?.user?.id
       );
 
       if (isAlreadyEnrolled) {
@@ -249,6 +260,10 @@ const BundleConfirmationScreen = () => {
 
       const updatedBundles = [...existingBundles, bundleToSave];
       await AsyncStorage.setItem("bundles", JSON.stringify(updatedBundles));
+
+      // Add user to bundle's enrolled_users array in the database
+      await addUserToBundleEnrolledUsers(safeBundle.id, user?.user?.id ?? "");
+
       const bundles2 = await AsyncStorage.getItem("bundles");
       console.log("bundlesalllll", JSON.parse(bundles2 || "[]"));
 

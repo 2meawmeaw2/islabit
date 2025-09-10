@@ -1,36 +1,42 @@
-import { convertApiHabitToStore, fetchAllHabits } from "@/lib/habits-api";
-import { useHabitsStore } from "@/store/habitsStore";
+import { fetchAllHabitsShop } from "@/lib/habits-shop-api";
+import { HabitsShopHabit, DEFAULT_CATEGORIES } from "@/types/habit";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInUp,
+  FadeInLeft,
+  FadeInRight,
+  FadeIn,
+  FadeOut,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const HabitIndex = () => {
   const router = useRouter();
+  const { category, q } = useLocalSearchParams<{
+    category?: string;
+    q?: string;
+  }>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Use the habits from the store
-  const habits = useHabitsStore((state) => state.habits);
-  const setHabitsInStore = useHabitsStore((state) => state.setHabits);
+  // Use local state for habits shop data
+  const [habits, setHabits] = useState<HabitsShopHabit[]>([]);
 
   useEffect(() => {
     const loadHabits = async () => {
-      // If we already have habits in the store, don't fetch again
-      if (habits.length > 0) {
-        return;
-      }
-
       try {
         setIsLoading(true);
-        const habitsData = await fetchAllHabits();
-        const localHabits = habitsData.map(convertApiHabitToStore);
-        setHabitsInStore(localHabits);
+        setError(null);
+        const habitsData = await fetchAllHabitsShop();
+        setHabits(habitsData);
       } catch (err) {
-        console.error("Error loading habits:", err);
+        console.error("Error loading habits shop:", err);
         setError("حدث خطأ في تحميل العادات");
       } finally {
         setIsLoading(false);
@@ -38,13 +44,46 @@ const HabitIndex = () => {
     };
 
     loadHabits();
-  }, [habits.length, setHabitsInStore]);
+  }, []);
 
-  const filteredHabits = habits.filter(
-    (habit) =>
-      habit.title.includes(searchQuery) ||
-      (habit.description && habit.description.includes(searchQuery))
-  );
+  // Initialize filters from URL params
+  useEffect(() => {
+    if (typeof q === "string" && q.trim().length > 0) setSearchQuery(q);
+
+    if (typeof category === "string" && category.trim().length > 0) {
+      const isValid = DEFAULT_CATEGORIES.some((c) => c.text === category);
+      if (isValid) setSelectedCategory(category);
+    }
+  }, [category, q]);
+
+  // Scroll to the end of category list by default
+  useEffect(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: false });
+    }, 100);
+  }, []);
+
+  // Filter habits based on search and category
+  const filteredHabits = useMemo(() => {
+    let filtered = habits;
+
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (habit) =>
+          habit.title.includes(searchQuery) ||
+          habit.description.includes(searchQuery) ||
+          habit.benefit.some((benefit) => benefit.includes(searchQuery))
+      );
+    }
+
+    if (selectedCategory) {
+      filtered = filtered.filter((habit) =>
+        habit.categories.some((cat) => cat.text === selectedCategory)
+      );
+    }
+
+    return filtered;
+  }, [habits, searchQuery, selectedCategory]);
 
   const handleHabitPress = (habitId: string) => {
     router.push({
@@ -91,7 +130,7 @@ const HabitIndex = () => {
       <View className="px-6 py-4">
         <View className="flex-row-reverse items-center justify-between">
           <Text className="font-ibm-plex-arabic-bold text-xl text-text-brand">
-            عاداتي
+            متجر العادات
           </Text>
           <Pressable
             onPress={() => router.back()}
@@ -109,24 +148,111 @@ const HabitIndex = () => {
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="ابحث في عاداتك..."
+              placeholder="ابحث عن عادة..."
               placeholderTextColor="#6C7684"
-              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 pl-12 text-right text-text-primary font-ibm-plex-arabic"
+              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 pl-12 text-right text-text-primary font-ibm-plex-arabic focus:border-brand/50"
+              style={{
+                borderColor: searchQuery
+                  ? "rgba(0, 174, 239, 0.3)"
+                  : "rgba(255, 255, 255, 0.1)",
+              }}
             />
             <Ionicons
               name="search"
               size={20}
-              color="#6C7684"
+              color={searchQuery ? "#00AEEF" : "#6C7684"}
               style={{ position: "absolute", left: 16, top: 12 }}
             />
           </View>
         </View>
 
+        {/* Category Filter */}
+        <Animated.View className="pr-6 mb-6">
+          <View className="flex-row-reverse items-center justify-between mb-3">
+            <Animated.Text
+              entering={FadeInRight.delay(200)}
+              className="font-ibm-plex-arabic-semibold text-lg text-text-primary"
+            >
+              الفئات
+            </Animated.Text>
+            <Animated.View className="h-10" entering={FadeIn} exiting={FadeOut}>
+              {(searchQuery || selectedCategory) && (
+                <Pressable
+                  onPress={() => {
+                    setSearchQuery("");
+                    setSelectedCategory(null);
+                  }}
+                  className="flex-row-reverse items-center justify-center rounded-full px-3 py-2 gap-2 ml-2"
+                >
+                  <Ionicons name="close-circle" size={20} color="#E53935" />
+                </Pressable>
+              )}
+            </Animated.View>
+          </View>
+
+          {/* Horizontal Category Scroll */}
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 0 }}
+          >
+            <View className="flex-row" style={{ flexDirection: "row-reverse" }}>
+              {/* All Categories Button */}
+              <Pressable
+                onPress={() => setSelectedCategory(null)}
+                className={`px-4 py-2 rounded-full ml-3 ${
+                  selectedCategory === null
+                    ? "bg-brand border border-brand"
+                    : "bg-white/5 border border-white/10"
+                }`}
+              >
+                <Animated.Text
+                  entering={FadeInRight.delay(100)}
+                  className={`font-ibm-plex-arabic-medium text-sm ${
+                    selectedCategory === null ? "text-white" : "text-text-muted"
+                  }`}
+                >
+                  الكل
+                </Animated.Text>
+              </Pressable>
+
+              {/* Category Buttons */}
+              {DEFAULT_CATEGORIES.map((category, index) => (
+                <Animated.View
+                  key={category.text}
+                  entering={FadeInLeft.delay(100 + index * 50)}
+                >
+                  <Pressable
+                    onPress={() => setSelectedCategory(category.text)}
+                    className={`px-4 rounded-full ml-3 border active:scale-95 ${
+                      selectedCategory === category.text
+                        ? "border-white/20"
+                        : "border-white/10"
+                    }`}
+                    style={{
+                      backgroundColor:
+                        selectedCategory === category.text
+                          ? "#00AEEF"
+                          : "rgba(255,255,255,0.05)",
+                    }}
+                    android_ripple={{ color: category.hexColor + "20" }}
+                  >
+                    <Text className="font-ibm-plex-arabic-medium py-2 text-text-primary text-sm">
+                      {category.text}
+                    </Text>
+                  </Pressable>
+                </Animated.View>
+              ))}
+            </View>
+          </ScrollView>
+        </Animated.View>
+
         {/* Habits List */}
         <View className="px-6">
           <View className="flex-row-reverse items-center justify-between mb-4">
             <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary">
-              العادات
+              العادات المتاحة
             </Text>
             <View className="bg-white/10 px-3 py-1 rounded-full">
               <Text className="font-ibm-plex-arabic-medium text-sm text-text-muted">
@@ -191,19 +317,64 @@ const HabitIndex = () => {
             >
               <View className="w-20 h-20 bg-fore rounded-full items-center justify-center mb-6">
                 <Ionicons
-                  name={searchQuery ? "search-outline" : "star-outline"}
+                  name={
+                    searchQuery || selectedCategory
+                      ? "search-outline"
+                      : "star-outline"
+                  }
                   size={40}
                   color="#6C7684"
                 />
               </View>
               <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary text-center mb-3">
-                {searchQuery ? "لم نجد عادات" : "لا توجد عادات"}
+                {searchQuery || selectedCategory
+                  ? "لم نجد عادات"
+                  : "لا توجد عادات متاحة"}
               </Text>
               <Text className="font-ibm-plex-arabic text-base text-text-muted text-center leading-6">
-                {searchQuery
-                  ? "جرب البحث بكلمات مختلفة"
-                  : "ابدأ بإنشاء عادات جديدة"}
+                {searchQuery || selectedCategory
+                  ? "جرب البحث بكلمات مختلفة أو اختر فئة أخرى"
+                  : "سيتم إضافة المزيد من العادات قريباً"}
               </Text>
+
+              {(searchQuery || selectedCategory) && (
+                <View className="mt-4 gap-3">
+                  <Pressable
+                    onPress={() => {
+                      setSearchQuery("");
+                      setSelectedCategory(null);
+                    }}
+                    className="px-6 py-2 bg-brand/20 border border-brand/30 rounded-full"
+                  >
+                    <Text className="font-ibm-plex-arabic-medium text-sm text-brand">
+                      إعادة تعيين
+                    </Text>
+                  </Pressable>
+
+                  {/* Show available categories */}
+                  <View className="items-center">
+                    <Text className="font-ibm-plex-arabic text-sm text-text-muted mb-2">
+                      الفئات المتاحة:
+                    </Text>
+                    <View className="flex-row flex-wrap justify-center gap-2">
+                      {DEFAULT_CATEGORIES.slice(0, 4).map((category) => (
+                        <View
+                          key={category.text}
+                          className="px-3 py-1 rounded-full"
+                          style={{ backgroundColor: category.hexColor + "20" }}
+                        >
+                          <Text
+                            className="font-ibm-plex-arabic text-xs"
+                            style={{ color: category.hexColor }}
+                          >
+                            {category.text}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              )}
             </Animated.View>
           )}
         </View>

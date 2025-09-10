@@ -30,7 +30,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
   error = null,
 }) => {
   const handleMoreHabits = () => {
-    router.push("/home/explore-habits");
+    router.push("/home/(habit)");
   };
 
   const handleMoreBundles = () => {

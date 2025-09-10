@@ -38,8 +38,6 @@ export default function BundleTrackingScreen() {
       setRefreshing(false);
     }
   }, [isBundlesHydrated]);
-  const bundles2 = useBundlesStore.getState().bundles;
-  console.log("bundles2", bundles2);
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <ScrollView

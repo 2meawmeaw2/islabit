@@ -13,12 +13,16 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type SimpleHabitCardProps = {
   title: string;
   subtitle?: string;
+  streak?: number;
+  color?: string;
   onPress?: () => void;
 };
 
 export const SimpleHabitCard: React.FC<SimpleHabitCardProps> = ({
   title,
   subtitle,
+  streak,
+  color = "#00AEEF",
   onPress,
 }) => {
   // Animation for press feedback
@@ -56,23 +60,42 @@ export const SimpleHabitCard: React.FC<SimpleHabitCardProps> = ({
         onPressOut={handlePressOut}
         onPress={handlePress}
         style={animatedStyle}
-        className="bg-fore flex-row-reverse justify-between items-center rounded-2xl p-4 mb-3 mx-2"
+        className="bg-fore flex-row-reverse justify-between items-center rounded-2xl p-4 mb-3 mx-2 relative"
       >
-        <View className="space-y-2">
+        {/* Streak Indicator - Top Right Corner */}
+        <View className="absolute -top-1 -right-1 z-10">
+          <View
+            style={{ backgroundColor: "#cc552a" }}
+            className=" rounded-full px-2 py-1 flex-row items-center gap-1 shadow-lg"
+          >
+            <Ionicons name="flame" size={12} color="#FFFFFF" />
+            <Text className="text-white font-ibm-plex-arabic-medium text-xs">
+              {streak}
+            </Text>
+          </View>
+        </View>
+
+        <View className="gap-2 flex-1 pr-3">
           {/* Title */}
           <Text className="text-text-primary font-ibm-plex-arabic-medium text-lg text-right">
             {title}
           </Text>
 
-          {/* Subtitle */}
+          {/* Subtitle with streak info */}
           {subtitle && (
-            <Text className="text-text-muted font-ibm-plex-arabic-light text-sm text-right">
-              {subtitle}
-            </Text>
+            <View className="gap-1">
+              <Text className="text-text-muted font-ibm-plex-arabic-light text-sm text-right">
+                {subtitle}
+              </Text>
+            </View>
           )}
         </View>
-        <View className="bg-text-brand rounded-full p-1">
-          <Ionicons name="chevron-back" size={18} color="#E5F8FF" />
+
+        <View
+          style={{ backgroundColor: `${color ? color : "#00AEEF"}60` }}
+          className="rounded-full p-1"
+        >
+          <Ionicons name="chevron-back" size={18} color={color} />
         </View>
       </AnimatedPressable>
     </Animated.View>
