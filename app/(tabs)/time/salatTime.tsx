@@ -108,7 +108,7 @@ const PrayerTimesScreen = () => {
 
       return name;
     } catch (e) {
-      if (e?.name === "AbortError") {
+      if (e?.toString() === "AbortError") {
         console.log("Request was aborted");
         throw e;
       }
@@ -127,13 +127,10 @@ const PrayerTimesScreen = () => {
         throw new Error("Location permission not granted");
       }
 
-      const result = await Location.reverseGeocodeAsync(
-        {
-          latitude,
-          longitude,
-        },
-        { language: "ar" }
-      );
+      const result = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
 
       if (result && result.length > 0) {
         return (
