@@ -22,7 +22,6 @@
       "edgeToEdgeEnabled": true,
       "package": "com.anonymous.myapp"
     },
-
     "web": {
       "bundler": "metro",
       "output": "static",
