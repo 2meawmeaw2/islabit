@@ -57,6 +57,9 @@ interface HabitShopDetailsScreenProps {
   isLoading?: boolean;
   onAddToHabits?: (habit: HabitsShopHabit) => void;
   imageTitleAnimatedStyle?: any; // AnimatedStyle type from react-native-reanimated
+  onLike?: () => void;
+  isLiked?: boolean;
+  isLiking?: boolean;
 }
 
 /** ----- sections ----- */
@@ -310,6 +313,9 @@ export const HabitShopDetailsScreen: React.FC<HabitShopDetailsScreenProps> = ({
   isLoading = false,
   onAddToHabits,
   imageTitleAnimatedStyle,
+  onLike,
+  isLiked = false,
+  isLiking = false,
 }) => {
   const [habit, setHabit] = useState(initialHabit);
   const categoryColor = habit?.color || "#00AEEF";
@@ -332,28 +338,6 @@ export const HabitShopDetailsScreen: React.FC<HabitShopDetailsScreenProps> = ({
       );
     }
   }, [isLoading, habit?.title]);
-
-  const handleAdd = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (onAddToHabits) {
-      onAddToHabits(habit);
-    } else {
-      Alert.alert(
-        "إضافة العادة",
-        "هل تريد إضافة هذه العادة إلى عاداتك الشخصية؟",
-        [
-          { text: "إلغاء", style: "cancel" },
-          {
-            text: "إضافة",
-            onPress: () =>
-              Alert.alert("تمت الإضافة", "تم إضافة العادة إلى عاداتك بنجاح", [
-                { text: "حسنًا" },
-              ]),
-          },
-        ]
-      );
-    }
-  }, [habit, onAddToHabits]);
 
   /** scroll-driven hero */
   const y = useSharedValue(0);
@@ -419,14 +403,42 @@ export const HabitShopDetailsScreen: React.FC<HabitShopDetailsScreenProps> = ({
                 />
               </View>
 
-              {/* H1 */}
-              <Animated.Text
-                style={[heroTitleStyle, imageTitleAnimatedStyle]}
-                className="font-ibm-plex-arabic-semibold text-2xl text-text-primary text-center pb-2"
-                accessibilityRole="header"
-              >
-                {habit?.title || "—"}
-              </Animated.Text>
+              {/* Title and Like Button Row */}
+              <View className="flex-row items-center justify-center gap-3 w-full px-4">
+                {/* H1 */}
+                <Animated.Text
+                  style={[heroTitleStyle, imageTitleAnimatedStyle]}
+                  className="font-ibm-plex-arabic-semibold text-2xl text-text-primary text-center pb-2 flex-1"
+                  accessibilityRole="header"
+                >
+                  {habit?.title || "—"}
+                </Animated.Text>
+
+                {/* Like Button */}
+                <Pressable
+                  onPress={onLike}
+                  disabled={isLiking}
+                  className="flex-row items-center"
+                  accessibilityLabel={isLiked ? "إلغاء الإعجاب" : "إعجاب"}
+                  accessibilityHint="انقر للتفاعل مع العادة"
+                >
+                  <View className="flex-row items-center gap-1">
+                    <MaterialCommunityIcons
+                      name={isLiked ? "heart" : "heart-outline"}
+                      size={24}
+                      color={isLiked ? categoryColor : "#64748B"}
+                    />
+                    {habit?.likes && (
+                      <Text
+                        className="font-ibm-plex-arabic-medium text-sm"
+                        style={{ color: isLiked ? categoryColor : "#64748B" }}
+                      >
+                        {habit.likes.length}
+                      </Text>
+                    )}
+                  </View>
+                </Pressable>
+              </View>
             </LinearGradient>
           </Animated.View>
         </Animated.View>

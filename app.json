@@ -38,7 +38,8 @@
         "expo-notifications",
         {
           "icon": "./assets/images/logo.png",
-          "color": "#00AEEF"
+          "color": "#00AEEF",
+          "sounds": ["./assets/sounds/sins.mp3"]
         }
       ],
       "expo-router",
@@ -59,9 +60,7 @@
         }
       ]
     ],
-    "notification": {
-      "sounds": ["./assets/sounds/sins.mp3"]
-    },
+
     "experiments": {
       "typedRoutes": true
     },

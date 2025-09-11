@@ -9,6 +9,7 @@ import {
   View,
   ActivityIndicator,
   TouchableOpacity,
+  Dimensions,
 } from "react-native";
 import Animated, {
   FadeInRight,
@@ -17,7 +18,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { router } from "expo-router";
 import { Bundle } from "@/lib/bundles";
-import HabitBundleSkeleton from "@/components/HabitBundleSkeleton";
 
 interface HabitBundlesSectionProps {
   onBundlePress: (bundle: Bundle) => void;
@@ -33,11 +33,9 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
   error = null,
 }) => {
   const scrollViewRef = useRef<ScrollView>(null);
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: false });
-    });
-  }, []);
+  scrollViewRef.current?.scrollToEnd({ animated: false });
+  const windowWidth = Dimensions.get("window").width;
+
   // Show loading state
   if (isLoading) {
     return (
@@ -45,9 +43,7 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
         entering={FadeInRight.delay(200)}
         exiting={FadeOutLeft.delay(200)}
         className="w-full"
-      >
-        <HabitBundleSkeleton count={3} />
-      </Animated.View>
+      ></Animated.View>
     );
   }
 
@@ -132,7 +128,7 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
 
       {/* Content Area - Shows skeleton when loading, real content when loaded */}
       {isLoading ? (
-        <HabitBundleSkeleton count={3} />
+        <></>
       ) : (
         <>
           {/* Bundles ScrollView */}
@@ -145,8 +141,8 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
           >
             <Pressable
               onPress={() => router.push("/home/explore-bundles")}
-              className="w-72 mx-4"
-              style={{ height: 250 }}
+              className=" mx-4"
+              style={{ height: 250, width: windowWidth - 50 }}
             >
               <View className="flex-1 items-center justify-center ">
                 <TouchableOpacity
@@ -168,10 +164,11 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
                 key={bundle.id}
                 entering={FadeInRight.delay(300 + index * 100)}
                 className="w-72 mx-4"
-                style={{ height: 250 }}
+                style={{ height: 250, minHeight: 250, width: windowWidth - 60 }}
               >
                 <Pressable
                   onPress={() => onBundlePress(bundle)}
+                  style={{ height: 250, minHeight: 250 }}
                   className="bg-fore rounded-2xl overflow-hidden shadow-lg"
                 >
                   {/* Bundle Image */}
@@ -218,9 +215,9 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
                     {/* Bundle Stats */}
                     <View className="flex-row-reverse items-center justify-between">
                       <View className="flex-row-reverse items-center gap-2">
-                        <Ionicons name="star" size={16} color="#F59E0B" />
+                        <Ionicons name="heart" size={16} color="#DC2626" />
                         <Text className="font-ibm-plex-arabic text-sm text-text-muted">
-                          {bundle.rating.toFixed(1)}
+                          {bundle.likes?.length}
                         </Text>
                         <Ionicons name="download" size={16} color="#9CA3AF" />
 

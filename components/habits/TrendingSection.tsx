@@ -10,7 +10,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { HabitsShopHabit } from "@/types/habit";
 import { Bundle } from "@/lib/bundles";
-import TrendingSkeleton from "@/components/TrendingSkeleton";
 
 interface TrendingSectionProps {
   onHabitPress?: (habitId: string) => void;
@@ -40,9 +39,10 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
   // Show loading state
   if (isLoading) {
     return (
-      <Animated.View entering={FadeInUp.delay(300)} className="w-full">
-        <TrendingSkeleton habitCount={3} bundleCount={3} />
-      </Animated.View>
+      <Animated.View
+        entering={FadeInUp.delay(300)}
+        className="w-full"
+      ></Animated.View>
     );
   }
 
@@ -84,7 +84,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
 
         {/* Content Area - Shows skeleton when loading, real content when loaded */}
         {isLoading ? (
-          <TrendingSkeleton habitCount={3} bundleCount={3} />
+          <></>
         ) : (
           <>
             <View className="gap-3">
@@ -161,7 +161,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
 
           {/* Content Area - Shows skeleton when loading, real content when loaded */}
           {isLoading ? (
-            <TrendingSkeleton habitCount={3} bundleCount={3} />
+            <></>
           ) : (
             <>
               <View className="gap-4">

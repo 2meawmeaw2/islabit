@@ -23,7 +23,6 @@ export function useAdhanScheduling() {
       try {
         await ensureNotificationSetup();
         await registerBackgroundRefresh();
-
         const params = buildParameters(defaultPrayerCalcConfig);
         const { raw } = computePrayerTimes(
           coordinates.lat,
@@ -32,12 +31,10 @@ export function useAdhanScheduling() {
           params
         );
         if (!mounted) return;
-
         const prayers = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
         const upcomingPrayers = prayers
           .map((name) => ({ name, date: (raw as any)[name] as Date }))
           .filter((p) => p.date.getTime() > Date.now());
-
         await schedulePrayers(upcomingPrayers);
       } catch (error) {
         console.error("Failed to setup Adhan notifications:", error);

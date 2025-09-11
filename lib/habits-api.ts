@@ -17,7 +17,7 @@ export interface HabitFromAPI {
   quote?: string;
   description?: string;
   related_days: number[];
-  related_salat: string[];
+  related_salat: PrayerKey[];
   category: {
     text: string;
     hexColor: string;
@@ -40,7 +40,7 @@ export const convertApiHabitToLocal = (
     quote: apiHabit.quote || "",
     whyDescription: apiHabit.description || "",
     suggestedRelatedSalat: (apiHabit.related_salat || []).map((salat) => ({
-      key: salat as any,
+      key: salat,
       name: salat,
       time: "",
       emoji: "🕌",
@@ -91,7 +91,7 @@ export const fetchAllHabits = async (): Promise<HabitFromAPI[]> => {
 // Fetch trending habits (popular habits from all users)
 export const fetchTrendingHabits = async (): Promise<HabitFromAPI[]> => {
   try {
-    const { data, error } = await supabase.from("habits").select("*").limit(10); // Get top 10 habits
+    const { data, error } = await supabase.from("habits").select("*").limit(3); // Get top 10 habits
 
     if (error) {
       console.error("Error fetching trending habits:", error);

@@ -11,7 +11,8 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 const AllHabits = () => {
   // Use centralized data fetching hook
-  const { bundles, trendingHabits, isLoading, error, refetch } = useHomeData();
+  const { trendingBundles, trendingHabits, isLoading, error, refetch } =
+    useHomeData();
   const handleHabitTypePress = (typeId: string) => {
     // Navigate to explore habits page with category filter
     router.push({
@@ -19,7 +20,6 @@ const AllHabits = () => {
       params: { category: typeId },
     });
   };
-  console.log("dsadsadasd", bundles);
 
   const handleBundlePress = (bundle: any) => {
     // Serialize the bundle object to JSON string
@@ -87,7 +87,7 @@ const AllHabits = () => {
 
           <HabitBundlesSection
             onBundlePress={handleBundlePress}
-            bundles={bundles}
+            bundles={trendingBundles}
             isLoading={isLoading}
             error={error}
           />
@@ -98,7 +98,7 @@ const AllHabits = () => {
           onHabitPress={handleTrendingHabitPress}
           onBundlePress={handleTrendingBundlePress}
           trendingHabits={trendingHabits}
-          trendingBundles={bundles.slice(0, 3)}
+          trendingBundles={trendingBundles}
           isLoading={isLoading}
           error={error}
         />

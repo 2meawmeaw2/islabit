@@ -18,7 +18,6 @@ type AnimatedHeaderProps = {
 
 const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   label,
-  completionPercent,
   initialExpanded = false,
 }) => {
   const AnimatedLinearGradient =
@@ -26,7 +25,7 @@ const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   const [expanded, setExpanded] = useState(initialExpanded);
   const backgroundContainerColor = useSharedValue("#00070A"); // Replaced transparent with solid dark
   const borderContainerColor = useSharedValue("#6C7684"); // Replaced transparent with solid gray
-  const HPaddingContainer = useSharedValue(16);
+  const HPaddingContainer = useSharedValue(126);
   const containerAnimatedStyle = useAnimatedStyle(() => {
     return {
       backgroundColor: backgroundContainerColor.value,

@@ -46,21 +46,21 @@ export interface Bundle {
 }
 
 // Fetch all bundles from Supabase
-export const fetchBundles = async (): Promise<Bundle[]> => {
+export const fetchTrendingBundles = async (): Promise<Bundle[]> => {
   try {
     const { data, error } = await supabase
       .from("bundles")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("enrolled_users", { ascending: true })
+      .limit(3);
 
     if (error) {
       console.error("Error fetching bundles:", error);
       throw error;
     }
-
     return data || [];
   } catch (error) {
-    console.error("Error in fetchBundles:", error);
+    console.error("Error in fetchTrendingBundles:", error);
     throw error;
   }
 };

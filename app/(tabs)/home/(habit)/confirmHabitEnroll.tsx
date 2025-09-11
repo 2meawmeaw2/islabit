@@ -16,6 +16,8 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useHabitsStore } from "@/store/habitsStore";
 import Button from "@/components/Button";
+import { useUserStore } from "@/store/userStore";
+import { supabase } from "@/utils/supabase";
 // Interface for habit enrollment settings
 interface HabitEnrollmentSettings {
   selectedDays: number[]; // Days of week (0-6, where 0=Sunday)
@@ -24,6 +26,8 @@ interface HabitEnrollmentSettings {
 }
 
 const ConfirmHabitEnroll = () => {
+  const { profile } = useUserStore();
+
   const params = useLocalSearchParams();
   const router = useRouter();
   const [habit, setHabit] = useState<HabitsShopHabit | null>(null);
@@ -84,6 +88,16 @@ const ConfirmHabitEnroll = () => {
   const handleConfirmEnrollment = async () => {
     if (!habit) return;
     try {
+      const { data: habitRow, error: fetchErr } = await supabase
+        .from("habits")
+        .select("enrolled_users")
+        .eq("id", habit.id)
+        .single();
+
+      if (fetchErr) {
+        console.error("Failed to fetch enrolled_users:", fetchErr);
+        throw fetchErr;
+      }
       // Convert HabitsShopHabit to HabitProps with user customizations
       const newHabit: HabitProps = {
         id: `shop_${habit.id}_${Date.now()}`, // Unique ID combining shop ID and timestamp
@@ -121,6 +135,19 @@ const ConfirmHabitEnroll = () => {
 
       // Save to storage using the store method
       await saveHabitsToStorage();
+      const current = (habitRow?.enrolled_users ?? []) as string[];
+
+      const next = Array.from(new Set([...current, profile?.id])); // de-dup
+
+      const { error: updateErr } = await supabase
+        .from("habits")
+        .update({ enrolled_users: next })
+        .eq("id", habit.id);
+
+      if (updateErr) {
+        console.error("Failed to update enrolled_users:", updateErr);
+        throw updateErr;
+      }
 
       console.log("Successfully added habit:", newHabit);
 

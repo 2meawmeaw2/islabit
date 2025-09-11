@@ -1,5 +1,6 @@
 // lib/adhan/notifications.ts
 import * as Notifications from "expo-notifications";
+import { getPresentedNotificationsAsync } from "expo-notifications";
 import { Platform } from "react-native";
 
 export interface PrayerSlot {
@@ -19,10 +20,11 @@ export async function ensureNotificationSetup(): Promise<void> {
     await Notifications.setNotificationChannelAsync("adhan", {
       name: "الآذان",
       importance: Notifications.AndroidImportance.MAX,
-      sound: "sins", // no extension; must match res/raw or bundled asset mapping
+      sound: "sins.mp3", // no extension; must match res/raw or bundled asset mapping
       vibrationPattern: [0, 250, 250, 250],
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       bypassDnd: false,
+      lightColor: "#000000",
     });
   }
 
@@ -33,6 +35,7 @@ export async function ensureNotificationSetup(): Promise<void> {
       shouldShowList: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
+      sound: "sins.mp3",
     }),
   });
 }
@@ -43,19 +46,17 @@ export async function cancelAllPrayerNotifications(): Promise<void> {
 
 export async function schedulePrayers(prayers: PrayerSlot[]): Promise<void> {
   // Assumes setup done
-  await cancelAllPrayerNotifications();
+  const notifications = await getPresentedNotificationsAsync();
+  console.log("notificssations", notifications);
 
+  await cancelAllPrayerNotifications();
   for (const p of prayers) {
-    console.log("p.date", p.date);
+    console.log("p.datesss", p.date);
     await Notifications.scheduleNotificationAsync({
       content: {
         title: titleForPrayer(p.name),
         body: ` ${p.date.toLocaleTimeString()}`,
-        sound: Platform.select({
-          ios: "sins.wav", // bundled ≤30s
-          android: "sins", // channel sound name
-          default: "sins",
-        }),
+        sound: "sins.mp3",
         priority: Notifications.AndroidNotificationPriority.MAX,
       },
       trigger: {

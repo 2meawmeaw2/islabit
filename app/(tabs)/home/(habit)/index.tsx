@@ -1,4 +1,3 @@
-import { fetchAllHabitsShop } from "@/lib/habits-shop-api";
 import { HabitsShopHabit, DEFAULT_CATEGORIES } from "@/types/habit";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -12,6 +11,7 @@ import Animated, {
   FadeOut,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useExploreStore } from "@/store/exploreStore";
 
 const HabitIndex = () => {
   const router = useRouter();
@@ -19,31 +19,18 @@ const HabitIndex = () => {
     category?: string;
     q?: string;
   }>();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // Get data and actions from explore store
+  const { habits, isLoading, error, hasMore, fetchMoreHabits } =
+    useExploreStore();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Use local state for habits shop data
-  const [habits, setHabits] = useState<HabitsShopHabit[]>([]);
-
+  // Load initial data
   useEffect(() => {
-    const loadHabits = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const habitsData = await fetchAllHabitsShop();
-        setHabits(habitsData);
-      } catch (err) {
-        console.error("Error loading habits shop:", err);
-        setError("حدث خطأ في تحميل العادات");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadHabits();
+    fetchMoreHabits(20); // Initial load with 20 items
   }, []);
 
   // Initialize filters from URL params
@@ -70,15 +57,15 @@ const HabitIndex = () => {
     if (searchQuery) {
       filtered = filtered.filter(
         (habit) =>
-          habit.title.includes(searchQuery) ||
-          habit.description.includes(searchQuery) ||
-          habit.benefit.some((benefit) => benefit.includes(searchQuery))
+          habit.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (habit.description &&
+            habit.description.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
     if (selectedCategory) {
-      filtered = filtered.filter((habit) =>
-        habit.categories.some((cat) => cat.text === selectedCategory)
+      filtered = filtered.filter(
+        (habit) => habit.category.text === selectedCategory
       );
     }
 
@@ -92,17 +79,11 @@ const HabitIndex = () => {
     });
   };
 
-  if (isLoading) {
-    return (
-      <SafeAreaView className="bg-bg flex-1">
-        <View className="flex-1 items-center justify-center">
-          <Text className="font-ibm-plex-arabic text-text-primary">
-            جاري التحميل...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const handleLoadMore = () => {
+    if (!isLoading && hasMore) {
+      fetchMoreHabits();
+    }
+  };
 
   if (error) {
     return (
@@ -112,7 +93,7 @@ const HabitIndex = () => {
             {error}
           </Text>
           <Pressable
-            onPress={() => window.location.reload()}
+            onPress={() => fetchMoreHabits(20)}
             className="px-6 py-2 bg-brand/20 border border-brand/30 rounded-full"
           >
             <Text className="font-ibm-plex-arabic text-brand">
@@ -123,7 +104,7 @@ const HabitIndex = () => {
       </SafeAreaView>
     );
   }
-
+  console.log(hasMore, isLoading, filteredHabits.length);
   return (
     <SafeAreaView className="bg-bg flex-1">
       {/* Header */}
@@ -308,6 +289,41 @@ const HabitIndex = () => {
               </Animated.View>
             ))}
           </View>
+
+          {/* Show More Button */}
+          {hasMore && !isLoading && filteredHabits.length > 0 && (
+            <Animated.View entering={FadeInUp} className="mt-6 mb-8">
+              <Pressable
+                onPress={handleLoadMore}
+                className="bg-text-brand/20 border border-brand/30 rounded-full py-3 px-6 items-center"
+              >
+                <Text className="font-ibm-plex-arabic-medium text-text-brand">
+                  عرض المزيد
+                </Text>
+              </Pressable>
+            </Animated.View>
+          )}
+          {!hasMore && (
+            <Animated.View entering={FadeInUp} className="mt-6 mb-8">
+              <Pressable
+                onPress={handleLoadMore}
+                className=" border border-brand/30 rounded-full py-3 px-6 items-center"
+              >
+                <Text className="font-ibm-plex-arabic-medium text-text-primary">
+                  لا توجد عادات أخرى متاحة
+                </Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Loading State */}
+          {isLoading && (
+            <View className="items-center justify-center py-8">
+              <Text className="font-ibm-plex-arabic text-text-muted">
+                جاري التحميل...
+              </Text>
+            </View>
+          )}
 
           {/* Empty State */}
           {filteredHabits.length === 0 && (

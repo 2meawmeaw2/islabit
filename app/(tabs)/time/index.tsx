@@ -221,7 +221,6 @@ const OrganizeModes: React.FC = () => {
           className="bg-fore relative h-[100%] rounded-t-2xl"
           contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
-          stickyHeaderIndices={[0]}
         >
           <View>
             <DisplayDays
