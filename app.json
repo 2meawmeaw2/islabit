@@ -18,7 +18,6 @@
       }
     },
     "android": {
-      "predictiveBackGestureEnabled": true,
       "blockedPermissions": ["android.permission.RECORD_AUDIO"],
       "permissions": ["VIBRATE", "WAKE_LOCK", "SCHEDULE_EXACT_ALARM"],
       "adaptiveIcon": {
