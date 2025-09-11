@@ -1,10 +1,14 @@
 import { useEffect } from "react";
 import * as Location from "expo-location";
 import { usePrayerTimesStore } from "../store/prayerTimesStore";
+import { useAdhanScheduling } from "@/hooks/useAdhanScheduling";
 
 export function usePrayerInitialization() {
   const { initializePrayers, updatePrayerWindow, isInitialized } =
     usePrayerTimesStore();
+
+  // Enable Adhan notifications scheduling once prayers are initialized
+  useAdhanScheduling();
 
   useEffect(() => {
     let mounted = true;
