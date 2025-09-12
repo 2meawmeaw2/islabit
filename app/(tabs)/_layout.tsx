@@ -160,12 +160,13 @@ function AnimatedTabBar({
         style={{
           position: "absolute",
           left: 16,
+          height: 70,
           right: 16,
           bottom: Math.max(insets.bottom, 10),
           borderRadius: 28,
           backgroundColor: colors.SURFACE,
           paddingHorizontal: 8,
-          paddingVertical: 8,
+
           elevation: 16,
           shadowColor: "#000",
           shadowOpacity: 0.15,
@@ -204,10 +205,10 @@ function TabRow({ state, descriptors, navigation, colors }: any) {
       <Animated.View
         style={{
           position: "absolute",
-          top: 4,
           left: 4,
           right: 4,
           bottom: 4,
+          height: 65,
           backgroundColor: `${colors.ACCENT}15`,
           borderRadius: 20,
           transform: [
@@ -225,8 +226,8 @@ function TabRow({ state, descriptors, navigation, colors }: any) {
       <View
         style={{
           flexDirection: "row",
-          justifyContent: "space-between",
           paddingHorizontal: 4,
+          height: 70,
         }}
       >
         {state.routes.map((route: any, index: number) => {
@@ -368,7 +369,7 @@ function AnimatedTabButton({
         >
           <Feather
             name={iconName as any}
-            size={24}
+            size={20}
             color={isFocused ? colors.ACCENT : colors.TEXT_MUTED}
             style={
               iconName === "search" && I18nManager.isRTL
@@ -382,7 +383,7 @@ function AnimatedTabButton({
             color: isFocused ? colors.ACCENT : colors.TEXT_MUTED,
             opacity: textOpacityAnim,
           }}
-          className={`font-ibm-plex-arabic-medium text-sm pb-2 ${
+          className={`font-ibm-plex-arabic text-sm pb-2 ${
             isFocused ? "font-ibm-plex-arabic-medium" : "font-ibm-plex-arabic"
           }`}
         >
