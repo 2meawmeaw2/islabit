@@ -10,6 +10,9 @@ import {
   Text,
   View,
   AccessibilityInfo,
+  NativeSyntheticEvent,
+  TextLayoutEventData,
+  LayoutChangeEvent,
 } from "react-native";
 import Animated, {
   FadeInDown,
@@ -71,12 +74,14 @@ const Section = ({
   children,
   delay = 0,
   accentColor = "#00AEEF",
+  rotateY = false,
 }: {
   icon: IconName;
   title: string;
   children: React.ReactNode;
   delay?: number;
   accentColor?: string;
+  rotateY?: boolean;
 }) => (
   <Animated.View
     entering={FadeInDown.duration(420).delay(delay)}
@@ -91,7 +96,17 @@ const Section = ({
           className="rounded-full p-2 ml-3"
           style={{ backgroundColor: addAlpha(accentColor, 0.1) }}
         >
-          <MaterialCommunityIcons name={icon} size={18} color={accentColor} />
+          <MaterialCommunityIcons
+            style={{
+              transform: [
+                { rotateY: rotateY ? "180deg" : "0deg" },
+                { rotateZ: rotateY ? "-20deg" : "0deg" },
+              ],
+            }}
+            name={icon}
+            size={18}
+            color={accentColor}
+          />
         </View>
         {/* H2 scale -> smaller than hero title */}
         <Text className="text-text-primary font-ibm-plex-arabic-semibold text-lg">
@@ -102,11 +117,6 @@ const Section = ({
     </View>
   </Animated.View>
 );
-
-/** ----- helpers (unchanged) ----- */
-/* ... BenefitsList / PrayerTimesDisplay / SuggestedDaysDisplay stay the same,
-   but we’ll tune text sizes inside them below for consistency. */
-
 const BenefitsList = ({
   benefits,
   accentColor = "#00AEEF",
@@ -114,6 +124,9 @@ const BenefitsList = ({
   benefits: string[];
   accentColor?: string;
 }) => {
+  const [wrapMap, setWrapMap] = useState<Record<number, boolean>>({});
+  const [containerW, setContainerW] = useState<number | null>(null);
+
   if (!benefits?.length)
     return (
       <View className="items-center py-4 px-5 bg-bg rounded-xl border border-fore border-dashed">
@@ -122,34 +135,107 @@ const BenefitsList = ({
         </Text>
       </View>
     );
+
+  const onContainerLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w !== containerW) {
+      setContainerW(w);
+      // width changed → clear measurements so we re-detect wrapping at the new width
+      setWrapMap({});
+    }
+  };
+
+  // Build rows while preserving order:
+  // - if item wraps → row with single full-width cell
+  // - else try to pair with the next non-wrapping item
+  const rows = useMemo(() => {
+    const r: Array<Array<number | null>> = [];
+    let i = 0;
+    while (i < benefits.length) {
+      const curWrap = !!wrapMap[i];
+      const nextWrap = i + 1 < benefits.length ? !!wrapMap[i + 1] : false;
+
+      if (curWrap) {
+        r.push([i]); // span 2 cols
+        i += 1;
+        continue;
+      }
+
+      if (i + 1 >= benefits.length) {
+        r.push([i, null]); // last short item, keep 2-col structure
+        i += 1;
+        continue;
+      }
+
+      // next exists
+      if (nextWrap) {
+        r.push([i, null]); // keep order; don't let this short one expand
+        r.push([i + 1]); // next one spans two cols
+        i += 2;
+      } else {
+        r.push([i, i + 1]); // pair two short ones
+        i += 2;
+      }
+    }
+    return r;
+  }, [benefits.length, wrapMap]);
+
+  let visibleIndex = 0; // for staggered animation
+
   return (
-    <View className="gap-2">
-      {benefits.map((benefit, index) => (
-        <Animated.View
-          key={`${benefit}-${index}`}
-          entering={FadeInRight.duration(260).delay(index * 80)}
-          className="flex-row-reverse items-center gap-2 "
-        >
-          <View
-            className="rounded-full p-2 mt-1"
-            style={{ backgroundColor: addAlpha(accentColor, 0.1) }}
-          >
-            <MaterialCommunityIcons
-              name="check-circle"
-              size={16}
-              color={accentColor}
-            />
-          </View>
-          {/* body scale + better leading */}
-          <Text className="text-text-secondary font-ibm-plex-arabic text-md text-right leading-7 flex-1">
-            {benefit}
-          </Text>
-        </Animated.View>
+    <View className="gap-2" onLayout={onContainerLayout}>
+      {rows.map((row, rIdx) => (
+        <View key={`row-${rIdx}`} className="flex-row-reverse gap-2">
+          {row.map((idx, cIdx) => {
+            if (idx === null) {
+              // spacer to keep 2 columns when needed
+              return <View key={`spacer-${rIdx}-${cIdx}`} className="flex-1" />;
+            }
+
+            const i = idx;
+            const isFull = row.length === 1; // this row is a single, spanning item
+            const delay = visibleIndex++ * 70;
+
+            return (
+              <Animated.View
+                key={`cell-${i}`}
+                entering={FadeInRight.duration(240).delay(delay)}
+                className="flex-1"
+                // no need for basis classes; rows control width
+              >
+                <View
+                  className={`flex-row-reverse items-center gap-2 rounded-lg px-3 py-2 ${
+                    isFull ? "" : ""
+                  }`}
+                  style={{ backgroundColor: addAlpha(accentColor, 0.08) }}
+                >
+                  <MaterialCommunityIcons
+                    name="check-circle"
+                    size={16}
+                    color={accentColor}
+                  />
+                  <Text
+                    className="text-text-secondary font-ibm-plex-arabic text-md text-right leading-6 flex-1"
+                    onTextLayout={(
+                      e: NativeSyntheticEvent<TextLayoutEventData>
+                    ) => {
+                      const wraps = e.nativeEvent.lines.length > 1;
+                      setWrapMap((prev) =>
+                        prev[i] === wraps ? prev : { ...prev, [i]: wraps }
+                      );
+                    }}
+                  >
+                    {benefits[i]}
+                  </Text>
+                </View>
+              </Animated.View>
+            );
+          })}
+        </View>
       ))}
     </View>
   );
 };
-
 const PrayerTimesDisplay = ({
   prayerKeys,
   accentColor = "#00AEEF",
@@ -168,8 +254,7 @@ const PrayerTimesDisplay = ({
   return (
     <View className="flex-row-reverse flex-wrap gap-2">
       {prayerKeys.map((key, i) => {
-        const p = PRAYERS.find((x) => x.key === key);
-        if (!p) return null;
+        if (!key) return null;
         return (
           <Animated.View
             key={key}
@@ -180,7 +265,7 @@ const PrayerTimesDisplay = ({
               className="text-text-primary py-1.5 px-3 rounded-xl font-ibm-plex-arabic-medium text-xs"
               style={{ backgroundColor: addAlpha(accentColor, 0.6) }}
             >
-              {`${p.name}`}
+              {`${key}`}
             </Text>
           </Animated.View>
         );
@@ -208,7 +293,6 @@ const SuggestedDaysDisplay = ({
   return (
     <View className="flex-row-reverse flex-wrap gap-2">
       {days.map((d, i) => {
-        const n = Number(d);
         return (
           <Animated.View
             key={`${d}-${i}`}
@@ -218,7 +302,7 @@ const SuggestedDaysDisplay = ({
               className="text-text-primary py-1.5 px-3 rounded-xl font-ibm-plex-arabic-medium text-xs"
               style={{ backgroundColor: addAlpha(accentColor, 0.6) }}
             >
-              {`${dayName(n)}`}
+              {d}
             </Text>
           </Animated.View>
         );
@@ -500,6 +584,7 @@ export const HabitShopDetailsScreen: React.FC<HabitShopDetailsScreenProps> = ({
               title="مرتبطة بصلاة"
               delay={240}
               accentColor={categoryColor}
+              rotateY={true}
             >
               <PrayerTimesDisplay
                 prayerKeys={habit?.suggestedRelatedSalat || []}

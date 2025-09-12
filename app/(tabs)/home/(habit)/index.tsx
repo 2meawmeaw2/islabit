@@ -2,7 +2,14 @@ import { HabitsShopHabit, DEFAULT_CATEGORIES } from "@/types/habit";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Animated, {
   FadeInUp,
   FadeInLeft,
@@ -107,17 +114,26 @@ const HabitIndex = () => {
   return (
     <SafeAreaView className="bg-bg flex-1">
       {/* Header */}
-      <View className="px-6 py-4">
+      <View
+        style={{
+          borderBottomWidth: 1,
+          borderBottomColor: "rgba(255, 255, 255, 0.1)",
+          borderBottomLeftRadius: 20,
+          borderBottomRightRadius: 20,
+        }}
+        className="px-6 py-4 bg-fore"
+      >
         <View className="flex-row-reverse items-center justify-between">
           <Text className="font-ibm-plex-arabic-bold text-xl text-text-brand">
             متجر العادات
           </Text>
-          <Pressable
+          <TouchableOpacity
+            activeOpacity={0.8}
             onPress={() => router.back()}
             className="w-10 h-10 rounded-full bg-white/10 items-center justify-center"
           >
             <Ionicons name="arrow-back" size={20} color="#00AEEF" />
-          </Pressable>
+          </TouchableOpacity>
         </View>
       </View>
 

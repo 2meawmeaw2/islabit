@@ -56,6 +56,7 @@ const WelcomeMinimalUI: React.FC = ({}) => {
       Alert.alert("خطأ", "حدث خطأ أثناء تسجيل الخروج");
     }
   };
+
   return (
     <SafeAreaView className="bg-bg flex-1 ">
       {/* Debug Info - User Status */}

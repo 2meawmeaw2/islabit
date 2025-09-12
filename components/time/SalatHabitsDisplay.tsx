@@ -151,6 +151,12 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
     console.log(",eawwea", days);
     console.log("meaw");
 
+    // Safety check to prevent accessing undefined prayers
+    const currentDay = days.length > 0 ? days[0] : null;
+    const currentPrayer = currentDay?.prayers?.find(
+      (p) => p.name === prayerKey
+    );
+
     return (
       <Animated.View
         entering={FadeInDown.duration(300).springify()}
@@ -184,9 +190,9 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
             <View className="flex-row-reverse items-center gap-2">
               <View className="flex-row-reverse items-center gap-1  px-2 py-1 rounded-lg">
                 <Text className="text-slate-200 text-xs font-ibm-plex-arabic-light">
-                  {dayjs(
-                    days[0].prayers.find((p) => p.name === prayerKey)?.time
-                  ).format("HH:mm")}
+                  {currentPrayer?.time
+                    ? dayjs(currentPrayer.time).format("HH:mm")
+                    : "--:--"}
                 </Text>
               </View>
               {completionPercentage === 100 ? (

@@ -12,11 +12,8 @@ const TASK_NAME = "ADHAN_BACKGROUND_REFRESH";
 TaskManager.defineTask(TASK_NAME, async () => {
   try {
     // Compute today’s five prayers using your existing utilities
-    console.log("coords should appear below this "); // implement with your store/persistence
 
     const coords = await getSavedCoordinates();
-    console.log("coords should appear below this ");
-    console.log("coords", coords);
     if (!coords) return BackgroundFetch.BackgroundFetchResult.NoData;
 
     const params = buildParameters(defaultPrayerCalcConfig);

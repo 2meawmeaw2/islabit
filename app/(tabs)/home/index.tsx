@@ -110,6 +110,7 @@ const AllHabits = () => {
           }
           onExploreMore={() => router.navigate("/home/(habit)")}
         />
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
