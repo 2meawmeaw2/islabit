@@ -156,7 +156,7 @@ export async function schedulePrayers(prayers: PrayerSlot[]): Promise<void> {
   }
 
   // Schedule a quick test notification (5 seconds)
-  const testDate = new Date(Date.now() + 5000);
+  const testDate = new Date(Date.now() + 30000);
   console.log("📅 Scheduling test notification for:", testDate);
 
   try {
