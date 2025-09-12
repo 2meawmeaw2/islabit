@@ -1,15 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Image,
   Pressable,
   ScrollView,
   Text,
   View,
-  ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from "react-native";
 import Animated, {
   FadeInRight,
@@ -33,8 +35,44 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
   error = null,
 }) => {
   const scrollViewRef = useRef<ScrollView>(null);
-  scrollViewRef.current?.scrollToEnd({ animated: false });
   const windowWidth = Dimensions.get("window").width;
+  const cardWidth = windowWidth - 80; // Better spacing
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const contentOffset = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffset / (cardWidth + 16)); // 16 is the margin between cards
+    setCurrentIndex(index);
+  };
+
+  // Loading skeleton component
+  const LoadingSkeleton = () => (
+    <View className="w-full">
+      <View className="flex-row-reverse items-center justify-between mb-6 px-5">
+        <View className="h-6 w-24 bg-slate-800 rounded-lg" />
+        <View className="h-4 w-16 bg-slate-800 rounded-lg" />
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {[1, 2, 3].map((item) => (
+          <View
+            key={item}
+            className="mx-2 first:ml-5 last:mr-5 bg-slate-800 rounded-2xl overflow-hidden"
+            style={{ width: cardWidth, height: 280 }}
+          >
+            <View className="h-44 bg-slate-700" />
+            <View className="p-4 space-y-3">
+              <View className="h-4 w-3/4 bg-slate-700 rounded" />
+              <View className="h-3 w-full bg-slate-700 rounded" />
+              <View className="flex-row-reverse justify-between items-center">
+                <View className="h-3 w-16 bg-slate-700 rounded" />
+                <View className="h-3 w-12 bg-slate-700 rounded" />
+              </View>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
 
   // Show loading state
   if (isLoading) {
@@ -42,37 +80,53 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
       <Animated.View
         entering={FadeInRight.delay(200)}
         exiting={FadeOutLeft.delay(200)}
-        className="w-full"
-      ></Animated.View>
+        className="w-full mt-6"
+      >
+        <LoadingSkeleton />
+      </Animated.View>
     );
   }
 
   // Show error state
   if (error) {
     return (
-      <Animated.View entering={FadeInUp.delay(200)} className="w-full px-4">
-        <View className="flex-row-reverse items-center justify-between mb-4">
-          <Text className="font-ibm-plex-arabic-semibold text-xl text-text-brand">
-            حزم العادات
+      <Animated.View entering={FadeInUp.delay(200)} className="w-full mt-6">
+        <View className="flex-row-reverse items-center justify-between mb-6 px-5">
+          <Text className="font-ibm-plex-arabic-semibold text-xl text-text-primary">
+            حزم العادات الرائجة
           </Text>
           <Pressable
             onPress={() => router.push("/home/explore-bundles")}
-            className="flex-row-reverse items-center gap-1"
+            className="flex-row-reverse items-center gap-2"
           >
-            <Text className="font-ibm-plex-arabic text-sm text-text-muted">
+            <Text className="font-ibm-plex-arabic text-sm text-text-secondary">
               عرض الكل
             </Text>
-            <Ionicons name="chevron-forward-circle" size={16} color="#6B7280" />
+            <Ionicons name="chevron-back" size={16} color="#F5F5F5" />
           </Pressable>
         </View>
-        <View className="flex-1 justify-center items-center py-20">
-          <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
-          <Text className="font-ibm-plex-arabic text-red-500 text-center mt-4">
-            {error}
-          </Text>
-          <Text className="font-ibm-plex-arabic text-text-muted text-center mt-2">
-            يرجى المحاولة مرة أخرى
-          </Text>
+        <View className="flex-1 justify-center items-center py-16 mx-5">
+          <View className="bg-fore rounded-2xl p-8 items-center w-full">
+            <View className="bg-red-900/20 p-4 rounded-full mb-4">
+              <Ionicons name="alert-circle-outline" size={48} color="#DC2626" />
+            </View>
+            <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary text-center mb-2">
+              حدث خطأ في التحميل
+            </Text>
+            <Text className="font-ibm-plex-arabic text-text-muted text-center mb-4">
+              {error}
+            </Text>
+            <TouchableOpacity
+              className="bg-text-brand px-6 py-3 rounded-xl"
+              onPress={() => {
+                /* Add retry logic */
+              }}
+            >
+              <Text className="font-ibm-plex-arabic text-pure-white">
+                إعادة المحاولة
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Animated.View>
     );
@@ -81,168 +135,226 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
   // Show empty state
   if (bundles.length === 0) {
     return (
-      <Animated.View entering={FadeInUp.delay(200)} className="w-full px-4">
-        <View className="flex-row-reverse items-center justify-between mb-4">
-          <Text className="font-ibm-plex-arabic-semibold text-xl text-white">
-            حزم العادات
+      <Animated.View entering={FadeInUp.delay(200)} className="w-full mt-6">
+        <View className="flex-row-reverse items-center justify-between mb-6 px-5">
+          <Text className="font-ibm-plex-arabic-semibold text-xl text-text-primary">
+            حزم العادات الرائجة
           </Text>
           <Pressable
             onPress={() => router.push("/home/explore-bundles")}
-            className="flex-row-reverse items-center gap-1"
+            className="flex-row-reverse items-center gap-2"
           >
-            <Text className="font-ibm-plex-arabic text-sm text-text-muted">
+            <Text className="font-ibm-plex-arabic text-sm text-text-secondary">
               عرض الكل
             </Text>
-            <Ionicons name="chevron-forward-circle" size={16} color="#6B7280" />
+            <Ionicons name="chevron-back" size={16} color="#F5F5F5" />
           </Pressable>
         </View>
-        <View className="flex-1 justify-center items-center py-20">
-          <Ionicons name="folder-outline" size={48} color="#6B7280" />
-          <Text className="font-ibm-plex-arabic text-text-muted text-center mt-4">
-            لا توجد حزم متاحة حالياً
-          </Text>
+        <View className="flex-1 justify-center items-center py-16 mx-5">
+          <View className="bg-fore rounded-2xl p-8 items-center w-full">
+            <View className="bg-slate-800 p-4 rounded-full mb-4">
+              <Ionicons name="library-outline" size={48} color="#9CA3AF" />
+            </View>
+            <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary text-center mb-2">
+              لا توجد حزم متاحة
+            </Text>
+            <Text className="font-ibm-plex-arabic text-text-muted text-center mb-4">
+              لا توجد حزم عادات متاحة حالياً
+            </Text>
+            <TouchableOpacity
+              className="bg-text-brand px-6 py-3 rounded-xl"
+              onPress={() => router.push("/home/explore-bundles")}
+            >
+              <Text className="font-ibm-plex-arabic text-pure-white">
+                استكشاف الحزم
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Animated.View>
     );
   }
 
   return (
-    <Animated.View entering={FadeInRight.delay(200)} className="w-full mt-5 ">
-      {/* Header - Always visible */}
-      <View className="flex-row-reverse items-center justify-between mb-4 px-4">
-        <Text className="font-ibm-plex-arabic-semibold text-xl text-text-primary">
-          حزم العادات
-        </Text>
+    <Animated.View entering={FadeInRight.delay(200)} className="w-full mt-6">
+      {/* Header */}
+      <View className="flex-row-reverse items-center justify-between mb-6 px-5">
+        <View className="flex-row-reverse items-center gap-2">
+          <View className="bg-text-brand/10 p-2 rounded-lg">
+            <Ionicons name="trending-up" size={20} color="#00AEEF" />
+          </View>
+          <Text className="font-ibm-plex-arabic-semibold text-xl text-text-primary">
+            حزم العادات الرائجة
+          </Text>
+        </View>
         <Pressable
           onPress={() => router.push("/home/explore-bundles")}
-          className="flex-row-reverse items-center gap-2"
+          className="flex-row-reverse items-center gap-2 bg-fore px-3 py-2 rounded-xl"
         >
           <Text className="font-ibm-plex-arabic text-sm text-text-secondary">
             عرض الكل
           </Text>
-          <View className="bg-white p-2 rounded-full">
-            <Ionicons name="chevron-back" size={16} color="#00AEEF" />
-          </View>
+          <Ionicons name="chevron-back" size={14} color="#F5F5F5" />
         </Pressable>
       </View>
 
-      {/* Content Area - Shows skeleton when loading, real content when loaded */}
-      {isLoading ? (
-        <></>
-      ) : (
-        <>
-          {/* Bundles ScrollView */}
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerClassName="gap-2"
-            className="flex-1"
+      {/* Bundles ScrollView */}
+      <ScrollView
+        ref={scrollViewRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 10 }}
+        className="flex-1"
+        snapToInterval={cardWidth} // Card width + margin
+        pagingEnabled={false}
+        onScroll={handleScroll}
+        snapToAlignment="start"
+        decelerationRate="fast"
+      >
+        {/* Add More Button - First Item */}
+        <Animated.View
+          entering={FadeInRight.delay(300)}
+          className="mr-4"
+          style={{ width: cardWidth }}
+        >
+          <Pressable
+            onPress={() => router.push("/home/explore-bundles")}
+            className="bg-fore border-2 border-dashed border-slate-700 rounded-2xl overflow-hidden"
+            style={{ height: 280 }}
+          >
+            <View className="flex-1 items-center justify-center p-6">
+              <View className="bg-text-brand/10 p-6 rounded-full mb-4">
+                <Ionicons name="add" size={40} color="#00AEEF" />
+              </View>
+              <Text className="font-ibm-plex-arabic-semibold text-lg text-text-primary mb-2">
+                استكشف المزيد
+              </Text>
+              <Text className="font-ibm-plex-arabic text-sm text-text-muted text-center">
+                اكتشف حزم عادات جديدة ومفيدة
+              </Text>
+            </View>
+          </Pressable>
+        </Animated.View>
+
+        {/* Bundle Cards */}
+        {bundles.map((bundle, index) => (
+          <Animated.View
+            key={bundle.id}
+            entering={FadeInRight.delay(400 + index * 100)}
+            className="mr-4"
+            style={{ width: cardWidth }}
           >
             <Pressable
-              onPress={() => router.push("/home/explore-bundles")}
-              className=" mx-4"
-              style={{ height: 250, width: windowWidth - 50 }}
+              onPress={() => onBundlePress(bundle)}
+              className="bg-fore rounded-2xl overflow-hidden border border-slate-800"
+              style={{ height: 280 }}
             >
-              <View className="flex-1 items-center justify-center ">
-                <TouchableOpacity
-                  onPress={() => router.push("/home/explore-bundles")}
-                  activeOpacity={0.8}
-                  className="bg-white/40 p-2 rounded-full"
-                >
-                  <Ionicons name="add-circle" size={80} color="#F5F5F5" />
-                </TouchableOpacity>
+              {/* Bundle Image */}
+              <View className="h-44 relative">
+                <Image
+                  source={{ uri: bundle.image_url }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
+                <LinearGradient
+                  colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.8)"]}
+                  className="absolute bottom-0 left-0 right-0 h-24"
+                />
 
-                <Text className="font-ibm-plex-arabic-bold text-lg text-text-secondary mt-2">
-                  المزيد
+                {/* Category Badge */}
+                <View className="absolute top-3 right-3">
+                  <View
+                    className="px-3 py-1 rounded-full border border-white/20"
+                    style={{ backgroundColor: `${bundle.category.hexColor}CC` }}
+                  >
+                    <Text className="font-ibm-plex-arabic text-xs text-white font-medium">
+                      {bundle.category.text}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Trending Badge */}
+                <View className="absolute top-3 left-3">
+                  <View className="bg-amber-500/90 px-2 py-1 rounded-full border border-amber-300/30">
+                    <View className="flex-row items-center gap-1">
+                      <Ionicons name="trending-up" size={12} color="#FFFFFF" />
+                      <Text className="font-ibm-plex-arabic text-xs text-white font-medium">
+                        رائج
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Title Overlay */}
+                <View className="absolute bottom-3 right-3 left-3">
+                  <Text className="font-ibm-plex-arabic-bold text-right text-lg text-white mb-1">
+                    {bundle.title}
+                  </Text>
+                  <Text className="font-ibm-plex-arabic text-sm text-right text-white/80">
+                    {bundle.subtitle}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Bundle Content */}
+              <View className="p-4 flex-1">
+                <Text className="font-ibm-plex-arabic text-sm text-right text-text-muted mb-4 line-clamp-2">
+                  {bundle.description}
                 </Text>
+
+                {/* Bundle Stats */}
+                <View className="flex-row-reverse items-center justify-between">
+                  <View className="flex-row-reverse items-center gap-4">
+                    <View className="flex-row-reverse items-center gap-1">
+                      <View className="bg-red-500/10 p-1 rounded-full">
+                        <Ionicons name="heart" size={14} color="#DC2626" />
+                      </View>
+                      <Text className="font-ibm-plex-arabic text-xs text-text-muted">
+                        {bundle.likes?.length || 0}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row-reverse items-center gap-1">
+                      <View className="bg-green-500/10 p-1 rounded-full">
+                        <Ionicons name="people" size={14} color="#22C55E" />
+                      </View>
+                      <Text className="font-ibm-plex-arabic text-xs text-text-muted">
+                        {bundle.enrolled_users?.length || 0}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="bg-text-brand/10 px-3 py-1.5 rounded-full">
+                    <View className="flex-row-reverse items-center gap-1">
+                      <Text className="font-ibm-plex-arabic-medium text-xs text-text-brand">
+                        {bundle.habits?.length || 0} عادة
+                      </Text>
+                      <Ionicons name="flash" size={12} color="#00AEEF" />
+                    </View>
+                  </View>
+                </View>
               </View>
             </Pressable>
+          </Animated.View>
+        ))}
+      </ScrollView>
 
-            {bundles.map((bundle, index) => (
-              <Animated.View
-                key={bundle.id}
-                entering={FadeInRight.delay(300 + index * 100)}
-                className="w-72 mx-4"
-                style={{ height: 250, minHeight: 250, width: windowWidth - 60 }}
-              >
-                <Pressable
-                  onPress={() => onBundlePress(bundle)}
-                  style={{ height: 250, minHeight: 250 }}
-                  className="bg-fore rounded-2xl overflow-hidden shadow-lg"
-                >
-                  {/* Bundle Image */}
-                  <View className="h-40 relative">
-                    <Image
-                      source={{ uri: bundle.image_url }}
-                      className="w-full h-full"
-                      resizeMode="cover"
-                    />
-                    <LinearGradient
-                      colors={["transparent", "rgba(0,0,0,0.7)"]}
-                      className="absolute bottom-0 left-0 right-0 h-20"
-                    />
-
-                    {/* Category Badge */}
-                    <View className="absolute top-3 right-3">
-                      <View
-                        className="px-3 py-1 rounded-full"
-                        style={{ backgroundColor: bundle.category.hexColor }}
-                      >
-                        <Text className="font-ibm-plex-arabic text-xs text-white">
-                          {bundle.category.text}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Bundle Info Overlay */}
-                    <View className="absolute bottom-3  right-3">
-                      <Text className="font-ibm-plex-arabic-bold text-right text-lg text-white mb-1">
-                        {bundle.title}
-                      </Text>
-                      <Text className="font-ibm-plex-arabic text-sm text-right text-white/90">
-                        {bundle.subtitle}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Bundle Content */}
-                  <View className="p-4">
-                    <Text className="font-ibm-plex-arabic text-sm text-right text-text-muted mb-3 line-clamp-2">
-                      {bundle.description}
-                    </Text>
-
-                    {/* Bundle Stats */}
-                    <View className="flex-row-reverse items-center justify-between">
-                      <View className="flex-row-reverse items-center gap-2">
-                        <Ionicons name="heart" size={16} color="#DC2626" />
-                        <Text className="font-ibm-plex-arabic text-sm text-text-muted">
-                          {bundle.likes?.length}
-                        </Text>
-                        <Ionicons name="download" size={16} color="#9CA3AF" />
-
-                        <Text className="font-ibm-plex-arabic text-sm text-text-muted">
-                          {bundle.enrolled_users.length}
-                        </Text>
-                      </View>
-
-                      <View className="flex-row-reverse items-center gap-1">
-                        <Text className="font-ibm-plex-arabic text-sm text-text-brand">
-                          {bundle.habits.length} عادة
-                        </Text>
-                        <Ionicons
-                          name="chevron-back"
-                          size={14}
-                          color="#00AEEF"
-                        />
-                      </View>
-                    </View>
-                  </View>
-                </Pressable>
-              </Animated.View>
-            ))}
-          </ScrollView>
-        </>
+      {/* Bottom indicator dots (optional) */}
+      {bundles.length > 0 && (
+        <View className="flex-row justify-center mt-4 gap-2">
+          {Array.from({ length: Math.min(bundles.length + 1, 4) }).map(
+            (_, index) => (
+              <View
+                key={index}
+                className={`h-1.5 rounded-full ${
+                  index === currentIndex
+                    ? "w-6 bg-text-brand"
+                    : "w-1.5 bg-slate-700"
+                }`}
+              />
+            )
+          )}
+        </View>
       )}
     </Animated.View>
   );
