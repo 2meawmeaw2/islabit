@@ -65,7 +65,8 @@ const AllHabits = () => {
       </View>
 
       <ScrollView
-        contentContainerClassName="pb-6 gap-8"
+        style={{ paddingBottom: 100 }}
+        contentContainerClassName=" gap-8"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

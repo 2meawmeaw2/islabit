@@ -121,7 +121,7 @@ const HabitIndex = () => {
         </View>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 " showsVerticalScrollIndicator={false}>
         {/* Search */}
         <View className="px-6 py-4">
           <View className="relative">
