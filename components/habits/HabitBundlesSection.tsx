@@ -73,7 +73,43 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
       </ScrollView>
     </View>
   );
+  const SectionHeader: React.FC<{
+    title: string;
+    onViewAll: () => void;
+    withIcon?: boolean;
+  }> = ({ title, onViewAll, withIcon = true }) => {
+    return (
+      <View className="flex-row-reverse items-center justify-between mb-6 px-5">
+        {/* Right side: icon + title, anchored to the right in RTL */}
+        <View className="flex-row-reverse items-center gap-2">
+          <Text className="font-ibm-plex-arabic-semibold text-xl text-text-primary text-right">
+            {title}
+          </Text>
+          {withIcon && (
+            <View className="bg-text-brand/10 p-2 rounded-lg">
+              <Ionicons
+                name="trending-up"
+                style={{ transform: [{ rotateY: "180deg" }] }}
+                size={20}
+                color="#ffffff"
+              />
+            </View>
+          )}
+        </View>
 
+        {/* Left side: View all */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          className="flex-row-reverse items-center gap-2 bg-fore px-3 py-2 rounded-xl"
+        >
+          <Text className="font-ibm-plex-arabic text-sm text-text-secondary">
+            عرض الكل
+          </Text>
+          <Ionicons name={"chevron-back"} size={14} color="#F5F5F5" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
   // Show loading state
   if (isLoading) {
     return (
@@ -178,25 +214,11 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
   return (
     <Animated.View entering={FadeInRight.delay(200)} className="w-full mt-6">
       {/* Header */}
-      <View className="flex-row-reverse items-center justify-between mb-6 px-5">
-        <View className="flex-row-reverse items-center gap-2">
-          <View className="bg-text-brand/10 p-2 rounded-lg">
-            <Ionicons name="trending-up" size={20} color="#00AEEF" />
-          </View>
-          <Text className="font-ibm-plex-arabic-semibold text-xl text-text-primary">
-            حزم العادات الرائجة
-          </Text>
-        </View>
-        <Pressable
-          onPress={() => router.push("/home/explore-bundles")}
-          className="flex-row-reverse items-center gap-2 bg-fore px-3 py-2 rounded-xl"
-        >
-          <Text className="font-ibm-plex-arabic text-sm text-text-secondary">
-            عرض الكل
-          </Text>
-          <Ionicons name="chevron-back" size={14} color="#F5F5F5" />
-        </Pressable>
-      </View>
+      <SectionHeader
+        title="حزم العادات الرائجة"
+        onViewAll={() => router.push("/home/explore-bundles")}
+        withIcon={true}
+      />
 
       {/* Bundles ScrollView */}
       <ScrollView
@@ -246,8 +268,8 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
           >
             <Pressable
               onPress={() => onBundlePress(bundle)}
-              className="bg-fore rounded-2xl overflow-hidden border border-slate-800"
-              style={{ height: 280 }}
+              className="bg-fore rounded-2xl overflow-hidden "
+              style={{ height: 260, borderWidth: 1, borderColor: "#1A1E1F" }}
             >
               {/* Bundle Image */}
               <View className="h-44 relative">
