@@ -16,10 +16,14 @@ import {
 import Animated, {
   FadeInRight,
   FadeInUp,
+  LinearTransition,
   FadeOutLeft,
+  StretchInX,
+  StretchOutX,
 } from "react-native-reanimated";
 import { router } from "expo-router";
 import { Bundle } from "@/lib/bundles";
+import Pagination from "./pagination";
 
 interface HabitBundlesSectionProps {
   onBundlePress: (bundle: Bundle) => void;
@@ -86,7 +90,7 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
             {title}
           </Text>
           {withIcon && (
-            <View className="bg-text-brand/10 p-2 rounded-lg">
+            <View className="bg-fore/90 p-2 rounded-lg">
               <Ionicons
                 name="trending-up"
                 style={{ transform: [{ rotateY: "180deg" }] }}
@@ -243,7 +247,7 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
           <Pressable
             onPress={() => router.push("/home/explore-bundles")}
             className="bg-fore border-2 border-dashed border-slate-700 rounded-2xl overflow-hidden"
-            style={{ height: 280 }}
+            style={{ height: 260 }}
           >
             <View className="flex-1 items-center justify-center p-6">
               <View className="bg-text-brand/10 p-6 rounded-full mb-4">
@@ -364,20 +368,11 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
 
       {/* Bottom indicator dots (optional) */}
       {bundles.length > 0 && (
-        <View className="flex-row justify-center mt-4 gap-2">
-          {Array.from({ length: Math.min(bundles.length + 1, 4) }).map(
-            (_, index) => (
-              <View
-                key={index}
-                className={`h-1.5 rounded-full ${
-                  index === currentIndex
-                    ? "w-6 bg-text-brand"
-                    : "w-1.5 bg-slate-700"
-                }`}
-              />
-            )
-          )}
-        </View>
+        <Pagination
+          count={Math.min(bundles.length + 1, 4)}
+          index={currentIndex} // or pass `progress` (SharedValue) for scroll-linked rounding
+          onPressDot={(i) => setCurrentIndex(i)}
+        />
       )}
     </Animated.View>
   );

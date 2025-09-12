@@ -258,8 +258,11 @@ const ConfirmHabitEnroll = () => {
         </Animated.View>
 
         {/* Days Selection */}
-        <Animated.View entering={FadeInDown.delay(100)} className="mb-6">
-          <Text className="font-ibm-plex-arabic-semibold text-lg text-right text-text-primary mb-3">
+        <Animated.View
+          entering={FadeInDown.delay(100)}
+          className="mb-6 bg-fore px-4 py-4 rounded-2xl"
+        >
+          <Text className="font-ibm-plex-arabic-semibold text-lg text-right text-text-primary mb-6">
             أيام الممارسة
           </Text>
           <View className="flex-row-reverse flex-wrap gap-2">
@@ -285,12 +288,10 @@ const ConfirmHabitEnroll = () => {
                     selectedDays: newDays,
                   }));
                 }}
-                className={`px-4 py-2 rounded-xl border ${
-                  enrollmentSettings.selectedDays.includes(index)
-                    ? "bg-primary border-primary"
-                    : "bg-fore border-white/20"
-                }`}
+                className={`px-4 py-2 rounded-xl border `}
                 style={{
+                  borderWidth: 1,
+                  borderStyle: "dashed",
                   backgroundColor: enrollmentSettings.selectedDays.includes(
                     index
                   )
@@ -298,7 +299,7 @@ const ConfirmHabitEnroll = () => {
                     : undefined,
                   borderColor: enrollmentSettings.selectedDays.includes(index)
                     ? enrollmentSettings.selectedColor
-                    : undefined,
+                    : "#9CA3AF",
                 }}
               >
                 <Text
@@ -316,8 +317,11 @@ const ConfirmHabitEnroll = () => {
         </Animated.View>
 
         {/* Prayers Selection */}
-        <Animated.View entering={FadeInDown.delay(200)} className="mb-6">
-          <Text className="font-ibm-plex-arabic-semibold text-lg text-right text-text-primary mb-3">
+        <Animated.View
+          entering={FadeInDown.delay(200)}
+          className="mb-6 px-4 py-4 rounded-2xl bg-fore"
+        >
+          <Text className="font-ibm-plex-arabic-semibold text-lg text-right text-text-primary mb-6">
             مرتبطة بصلاة
           </Text>
           <View className="flex-row-reverse flex-wrap gap-2">
@@ -347,14 +351,10 @@ const ConfirmHabitEnroll = () => {
                     selectedPrayers: newPrayers,
                   }));
                 }}
-                className={`px-4 py-2 rounded-xl border flex-row-reverse items-center gap-2 ${
-                  enrollmentSettings.selectedPrayers.includes(
-                    prayer.key as PrayerKey
-                  )
-                    ? "bg-primary border-primary"
-                    : "bg-fore border-white/20"
-                }`}
+                className={`px-4 py-2 my-1 rounded-xl flex-row-reverse items-center gap-2 `}
                 style={{
+                  borderWidth: 1,
+                  borderStyle: "dashed",
                   backgroundColor: enrollmentSettings.selectedPrayers.includes(
                     prayer.key as PrayerKey
                   )
@@ -364,10 +364,9 @@ const ConfirmHabitEnroll = () => {
                     prayer.key as PrayerKey
                   )
                     ? enrollmentSettings.selectedColor
-                    : undefined,
+                    : "#9CA3AF",
                 }}
               >
-                <Text className="text-lg">{prayer.emoji}</Text>
                 <Text
                   className={`font-ibm-plex-arabic-medium text-sm ${
                     enrollmentSettings.selectedPrayers.includes(
@@ -385,8 +384,11 @@ const ConfirmHabitEnroll = () => {
         </Animated.View>
 
         {/* Color Selection */}
-        <Animated.View entering={FadeInDown.delay(300)} className="mb-8">
-          <Text className="font-ibm-plex-arabic-semibold text-lg text-right text-text-primary mb-3">
+        <Animated.View
+          entering={FadeInDown.delay(300)}
+          className="mb-8 px-4 py-4 rounded-2xl bg-fore"
+        >
+          <Text className="font-ibm-plex-arabic-semibold text-lg text-right text-text-primary mb-6">
             لون العادة
           </Text>
           <View className="flex-row-reverse flex-wrap gap-3">
@@ -407,7 +409,7 @@ const ConfirmHabitEnroll = () => {
                     selectedColor: color,
                   }))
                 }
-                className={`w-12 h-12 rounded-full border-2 ${
+                className={`w-10 h-10 rounded-full border-2 ${
                   enrollmentSettings.selectedColor === color
                     ? "border-white"
                     : "border-white/30"

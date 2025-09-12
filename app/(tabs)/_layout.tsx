@@ -78,7 +78,7 @@ export default function TabsLayout() {
           options={{
             title: "حسابي",
             tabBarAccessibilityLabel: "حسابي",
-            animation: "shift",
+            animation: "fade",
           }}
           listeners={{
             tabPress: (e) => {
@@ -91,7 +91,7 @@ export default function TabsLayout() {
           name="time"
           options={{
             title: "وقتي",
-            animation: "shift",
+            animation: "fade",
             tabBarAccessibilityLabel: "وقتي",
           }}
           listeners={{
@@ -105,7 +105,7 @@ export default function TabsLayout() {
           name="home"
           options={{
             title: "اكتشف",
-            animation: "shift",
+            animation: "fade",
             tabBarAccessibilityLabel: "اكتشف",
           }}
           listeners={{

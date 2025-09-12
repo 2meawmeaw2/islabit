@@ -24,13 +24,18 @@ export default function RootLayout() {
         options={{
           headerShown: false,
           title: "اكتشف الرحلات",
-          animation: "slide_from_right",
+          animation: "fade_from_bottom",
         }}
       />
 
       <Stack.Screen
         name="(habit)"
-        options={{ headerShown: false, title: "العدّاد", animation: "fade" }}
+        options={{
+          headerShown: false,
+          title: "العدّاد",
+          presentation: "fullScreenModal",
+          animation: "slide_from_bottom",
+        }}
       />
     </Stack>
   );

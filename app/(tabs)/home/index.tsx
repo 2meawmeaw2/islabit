@@ -1,6 +1,6 @@
 import SvgHomeBg from "@/assets/images/svg-home-bg.svg";
 import HabitBundlesSection from "@/components/habits/HabitBundlesSection";
-import HabitTypesSection from "@/components/habits/HabitTypesSection";
+import CategorySection from "@/components/habits/HabitTypesSection";
 import TrendingSection from "@/components/habits/TrendingSection";
 import { useHomeData } from "@/lib/use-home-data";
 import { Ionicons } from "@expo/vector-icons";
@@ -93,17 +93,22 @@ const AllHabits = () => {
           />
         </View>
         {/* Trending Section - Habits and Bundles */}
-
         <TrendingSection
           onHabitPress={handleTrendingHabitPress}
-          onBundlePress={handleTrendingBundlePress}
           trendingHabits={trendingHabits}
-          trendingBundles={trendingBundles}
           isLoading={isLoading}
           error={error}
         />
         {/* Second HabitBundlesSection */}
-        <HabitTypesSection onHabitTypePress={handleHabitTypePress} />
+        <CategorySection
+          onCategoryPress={(categoryId) =>
+            router.push({
+              pathname: "/home/(habit)",
+              params: { category: categoryId },
+            })
+          }
+          onExploreMore={() => router.navigate("/home/(habit)")}
+        />
       </ScrollView>
     </SafeAreaView>
   );

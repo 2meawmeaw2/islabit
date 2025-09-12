@@ -23,7 +23,7 @@ const HabitIndex = () => {
   // Get data and actions from explore store
   const { habits, isLoading, error, hasMore, fetchMoreHabits } =
     useExploreStore();
-
+  console.log("habits", habits);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -104,7 +104,6 @@ const HabitIndex = () => {
       </SafeAreaView>
     );
   }
-  console.log(hasMore, isLoading, filteredHabits.length);
   return (
     <SafeAreaView className="bg-bg flex-1">
       {/* Header */}
@@ -250,40 +249,36 @@ const HabitIndex = () => {
               >
                 <Pressable
                   onPress={() => handleHabitPress(habit.id)}
-                  className="w-full rounded-2xl overflow-hidden border border-white/10 active:scale-95"
-                  style={{ backgroundColor: "#1a1a1a" }}
+                  className="w-full rounded-2xl  overflow-hidden border border-white/10 active:scale-95"
+                  style={{ backgroundColor: "#1a1a1a", height: 80 }}
                 >
-                  <View className="p-4">
-                    <View className="flex-row-reverse items-start justify-between mb-3">
-                      <View className="flex-row-reverse items-center flex-1 gap-3">
-                        <View className="w-12 h-12 rounded-xl items-center justify-center mr-3 bg-white/10">
-                          <Text className="text-2xl">✨</Text>
-                        </View>
-
-                        <View className="flex-1">
-                          <Text className="font-ibm-plex-arabic-bold text-lg text-text-primary mb-1 text-right">
-                            {habit.title}
-                          </Text>
-                          <Text className="font-ibm-plex-arabic text-sm text-text-muted text-right leading-5">
-                            {habit.description}
-                          </Text>
-                        </View>
-                      </View>
+                  <View className="flex-row-reverse gap-4 h-full items-center justify-between py-2">
+                    <View
+                      style={{ height: 55, width: 55 }}
+                      className=" rounded-3xl items-center border border-white/20 justify-center mr-3 bg-white/10"
+                    >
+                      <Ionicons name="cafe" size={28} color="#00AEEF" />
                     </View>
-
-                    {/* Quote */}
-                    {habit.quote && (
-                      <View className="border-t mt-5 border-white/10 pt-3">
-                        <Text className="font-ibm-plex-arabic-light text-sm text-text-brand text-right">
-                          {habit.quote}
+                    <View className="flex-row-reverse   items-center flex-1 gap-3 ">
+                      <View className="flex-1">
+                        <Text className="font-ibm-plex-arabic-bold text-lg text-text-primary mb-1 text-right">
+                          {habit.title}
+                        </Text>
+                        <Text className="font-ibm-plex-arabic text-sm text-text-muted text-right leading-5">
+                          {habit.description
+                            ? habit.description.slice(0, 40) + "..."
+                            : habit.quote?.slice(0, 40) + "..."}
                         </Text>
                       </View>
-                    )}
-
-                    {/* Arrow indicator */}
-                    <View className="absolute top-4 left-4">
-                      <Ionicons name="chevron-back" size={16} color="#00AEEF" />
                     </View>
+                  </View>
+
+                  {/* Arrow indicator */}
+                  <View
+                    style={{ transform: [{ translateY: "-50%" }] }}
+                    className="absolute top-1/2  left-2"
+                  >
+                    <Ionicons name="chevron-back" size={18} color="#ffffff80" />
                   </View>
                 </Pressable>
               </Animated.View>
