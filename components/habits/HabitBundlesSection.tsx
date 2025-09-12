@@ -100,6 +100,7 @@ const HabitBundlesSection: React.FC<HabitBundlesSectionProps> = ({
         {/* Left side: View all */}
         <TouchableOpacity
           activeOpacity={0.8}
+          onPress={onViewAll}
           className="flex-row-reverse items-center gap-2 bg-fore px-3 py-2 rounded-xl"
         >
           <Text className="font-ibm-plex-arabic text-sm text-text-secondary">
