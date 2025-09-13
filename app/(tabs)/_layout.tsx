@@ -159,20 +159,13 @@ function AnimatedTabBar({
         accessibilityRole="tablist"
         style={{
           position: "absolute",
-          left: 16,
-          height: 70,
-          right: 16,
-          bottom: Math.max(insets.bottom, 10),
-          borderRadius: 28,
+          width: "100%",
+          left: 0,
+          bottom: 0,
+          paddingVertical: 2,
           backgroundColor: colors.SURFACE,
-          paddingHorizontal: 8,
 
-          elevation: 16,
-          shadowColor: "#000",
-          shadowOpacity: 0.15,
-          shadowRadius: 20,
-          shadowOffset: { width: 0, height: 8 },
-          borderWidth: 2,
+          borderTopWidth: 2,
           borderColor: colors.BORDER,
         }}
       >
@@ -189,7 +182,7 @@ function AnimatedTabBar({
 
 function TabRow({ state, descriptors, navigation, colors }: any) {
   const indicatorAnim = useRef(new Animated.Value(0)).current;
-  const tabWidth = (SCREEN_WIDTH - 64) / 3; // Account for padding and margins
+  const tabWidth = SCREEN_WIDTH; // Account for padding and margins
 
   useEffect(() => {
     Animated.timing(indicatorAnim, {
@@ -205,8 +198,7 @@ function TabRow({ state, descriptors, navigation, colors }: any) {
       <Animated.View
         style={{
           position: "absolute",
-          left: 4,
-          right: 4,
+          left: 0,
           bottom: 4,
           height: 65,
           backgroundColor: `${colors.ACCENT}15`,
@@ -215,18 +207,17 @@ function TabRow({ state, descriptors, navigation, colors }: any) {
             {
               translateX: indicatorAnim.interpolate({
                 inputRange: [0, 1, 2],
-                outputRange: [0, tabWidth, tabWidth * 2],
+                outputRange: [0, tabWidth / 3, (tabWidth / 3) * 2],
               }),
             },
           ],
-          width: tabWidth,
+          width: tabWidth / 3,
         }}
       />
 
       <View
         style={{
           flexDirection: "row",
-          paddingHorizontal: 4,
           height: 70,
         }}
       >

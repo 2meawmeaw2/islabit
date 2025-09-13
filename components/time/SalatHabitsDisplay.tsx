@@ -161,7 +161,7 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
       <Animated.View
         entering={FadeInDown.duration(300).springify()}
         layout={Layout.springify().damping(15)}
-        className="mx-2 mb-6 mt-4 rounded-2xl border border-slate-600/30 p-3 justify-center"
+        className="mx-2 mb-6 mt-4 rounded-2xl border bg-bg/50 border-slate-600/30 p-3 justify-center"
       >
         {/* Clean Salat Header */}
         <AnimatedPressable
@@ -253,31 +253,28 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
             entering={reducedMotion ? undefined : FadeIn.duration(300)}
             exiting={reducedMotion ? undefined : FadeOutUp.duration(300)}
             layout={reducedMotion ? undefined : Layout.springify().damping(15)}
-            className={`rounded-xl mt-4  overflow-hidden ${
-              allCompleted ? "bg-slate-800/50" : "bg-slate-800/30"
-            }`}
+            className={`rounded-xl mt-4  overflow-hidden `}
           >
             {/* Simple Header when all completed */}
             {allCompleted && (
               <Animated.View
-                entering={reducedMotion ? undefined : FadeIn}
-                exiting={reducedMotion ? undefined : FadeOut}
-                className="p-4 flex-row-reverse items-center justify-between bg-slate-700/40 rounded-t-xl"
+                entering={FadeIn}
+                exiting={FadeOut}
+                className="px-4 pb-1"
               >
-                <View className="flex-row-reverse items-center gap-2">
-                  <Animated.Text
-                    entering={FadeInRight.duration(300)}
-                    exiting={FadeOutRight.duration(300)}
-                    className="text-text-brand font-ibm-plex-arabic-medium text-sm"
-                  >
-                    جميع العادات مكتملة
-                  </Animated.Text>
+                <View className="bg-slate-700/40 rounded-xl px-3 py-2 items-center justify-center flex-row-reverse gap-2">
+                  <Text className="text-text-brand text-sm font-ibm-plex-arabic-medium">
+                    جميع العادات مكتملة — عمل رائع!
+                  </Text>
+                  <Ionicons name="sparkles-outline" size={14} color="#4ADE80" />
                 </View>
               </Animated.View>
             )}
 
             {habits.length === 0 ? (
-              <View className="py-8 px-4 items-center justify-center">
+              <View className="py-8 px-4 items-center justify-center border border-dashed border-text-disabled">
+                <Ionicons name="leaf-outline" size={40} color="#9AA4B2" />
+
                 <Text className="text-text-disabled font-ibm-plex-arabic text-sm mt-2 text-center">
                   لا توجد عادات لهذا الوقت
                 </Text>
@@ -499,9 +496,48 @@ const HabitItem: React.FC<{
     >
       <Animated.View
         style={[animatedStyle, { marginBottom: 10 }]}
-        className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-full p-4 shadow-lg border border-slate-600/30"
+        className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-2xl p-4 shadow-lg border border-slate-600/30"
       >
         {/* Enhanced Toggle Button with better animations */}
+        <Pressable onPress={() => onPress(habit)}>
+          <Animated.View
+            style={{ width: 56, height: 56 }}
+            className=" rounded-2xl items-center justify-center bg-yellow-500/80"
+            entering={FadeIn.delay(150 + index * 40)
+              .duration(400)
+              .easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
+          >
+            <Ionicons name="logo-vercel" size={16} color="#000" />
+          </Animated.View>
+        </Pressable>
+        {/* Clean Habit Content with smooth transitions */}
+        <Animated.View
+          layout={LinearTransition.springify()
+            .mass(0.6)
+            .damping(30)
+            .stiffness(100)}
+          className="flex-1"
+        >
+          <AnimatedPressable
+            onPress={() => onPress(habit)} // Navigate to tracking screen
+            className="flex-1"
+            accessibilityRole="button"
+            accessibilityLabel={`${habit.title} - ${isCompletedToday ? "مكتمل" : "غير مكتمل"}`}
+          >
+            <View className="flex-row-reverse items-center mb-1 ">
+              <Animated.Text
+                className="font-ibm-plex-arabic-medium text-lg flex-1 text-right py-2"
+                style={textAnimatedStyle}
+                numberOfLines={1}
+              >
+                {habit.title}
+              </Animated.Text>
+
+              {/* Bundle Indicator */}
+            </View>
+          </AnimatedPressable>
+        </Animated.View>
+
         <AnimatedPressable className="w-8 h-8 rounded-full  items-center justify-center mr-4 border-2 border-text-disabled">
           <AnimatedPressable
             onPress={handleToggle}
@@ -533,50 +569,6 @@ const HabitItem: React.FC<{
             </Animated.View>
           </AnimatedPressable>
         </AnimatedPressable>
-
-        {/* Clean Habit Content with smooth transitions */}
-        <Animated.View
-          layout={LinearTransition.springify()
-            .mass(0.6)
-            .damping(30)
-            .stiffness(100)}
-          className="flex-1"
-        >
-          <AnimatedPressable
-            onPress={() => onPress(habit)} // Navigate to tracking screen
-            className="flex-1"
-            accessibilityRole="button"
-            accessibilityLabel={`${habit.title} - ${isCompletedToday ? "مكتمل" : "غير مكتمل"}`}
-          >
-            <View className="flex-row-reverse items-center mb-1 ">
-              <Animated.Text
-                className="font-ibm-plex-arabic-medium text-base flex-1 text-right py-2"
-                style={textAnimatedStyle}
-                numberOfLines={1}
-              >
-                {habit.title}
-              </Animated.Text>
-
-              {/* Bundle Indicator */}
-            </View>
-          </AnimatedPressable>
-        </Animated.View>
-
-        {/* Simple Arrow with subtle animation */}
-        <Pressable onPress={() => onPress(habit)}>
-          <Animated.View
-            entering={FadeIn.delay(150 + index * 40)
-              .duration(400)
-              .easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={16}
-              color="#4B9AB5"
-              className="ml-2"
-            />
-          </Animated.View>
-        </Pressable>
       </Animated.View>
     </Animated.View>
   );
