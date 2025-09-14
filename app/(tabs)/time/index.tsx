@@ -198,7 +198,6 @@ const OrganizeModes: React.FC = () => {
             position="top-left"
           />
         </View>
-
         <ScrollView
           className=" relative h-[100%] rounded-t-3xl bg-fore"
           contentContainerStyle={{ paddingBottom: 140 }}
