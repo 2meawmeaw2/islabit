@@ -57,7 +57,7 @@
     "prettier-plugin-tailwindcss": "^0.5.14",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-native": "^0.79.6",
+    "react-native": "0.79.5",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-mmkv": "^2.12.2",
     "react-native-pager-view": "6.7.1",

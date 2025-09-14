@@ -11,21 +11,16 @@
     "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.myapp",
-      "infoPlist": {
-        "UIBackgroundModes": ["fetch"],
-        "NSUserTrackingUsageDescription": "We use notifications to remind you of prayer times."
-      }
+      "bundleIdentifier": "com.anonymous.myapp"
     },
     "android": {
       "blockedPermissions": ["android.permission.RECORD_AUDIO"],
-      "permissions": ["VIBRATE", "WAKE_LOCK", "SCHEDULE_EXACT_ALARM"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.aqalAlqalil"
+      "package": "com.anonymous.myapp"
     },
     "web": {
       "bundler": "metro",
@@ -33,14 +28,6 @@
       "favicon": "./assets/images/logo.png"
     },
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/logo.png",
-          "color": "#00AEEF",
-          "sounds": ["./assets/sounds/sins.mp3"]
-        }
-      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -59,7 +46,6 @@
         }
       ]
     ],
-
     "experiments": {
       "typedRoutes": true
     },
