@@ -7,7 +7,7 @@
     "icon": "./assets/images/logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true,
@@ -44,7 +44,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "يحتاج التطبيق الى التعرف على موقعك لتحديد أوقات الصلاة"
         }
-      ]
+      ],
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true
