@@ -1,16 +1,16 @@
+import { PRAYERS } from "@/assets/constants/prayers";
 import S from "@/assets/styles/shared";
+import { FloatingActionMenu } from "@/components/FloatingActionMenu";
+import BundleFilter from "@/components/time/BundleFilter";
 import { SalatHabitsDisplay } from "@/components/time/SalatHabitsDisplay";
 import DisplayDays from "@/components/time/displayDays";
-import BundleFilter from "@/components/time/BundleFilter";
 import { useAuth } from "@/lib/auth";
 import { fmtArabicDateMonthAndNumber } from "@/lib/dates";
-import { PRAYERS } from "@/assets/constants/prayers";
 import { loadUserById } from "@/lib/usersTable";
+import { useBundlesStore } from "@/store/bundlesStore";
 import { useHabitsStore } from "@/store/habitsStore";
-import { FloatingActionMenu } from "@/components/FloatingActionMenu";
 import { AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useBundlesStore } from "@/store/bundlesStore";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
