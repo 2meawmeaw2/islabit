@@ -168,7 +168,7 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
           borderRadius: 16,
           borderColor: completionPercentage === 100 ? "#00AEEF99" : "#334155",
         }}
-        className="mx-2 mb-6 mt-4   bg-bg/50 p-3 justify-center"
+        className="mx-2 mb-6 mt-4   bg-bg/90 p-3 justify-center"
       >
         {/* Clean Salat Header */}
         <AnimatedPressable
@@ -499,7 +499,7 @@ const HabitItem: React.FC<{
     >
       <Animated.View
         style={[animatedStyle, { marginBottom: 10 }]}
-        className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-3xl px-4 py-2 shadow-lg border border-slate-600/30"
+        className="flex-row-reverse gap-3 items-center bg-fore rounded-3xl px-4 py-2 shadow-lg border border-slate-600/30"
       >
         {/* Enhanced Toggle Button with better animations */}
         <Pressable onPress={() => onPress(habit)}>
@@ -553,7 +553,13 @@ const HabitItem: React.FC<{
           </AnimatedPressable>
         </Animated.View>
 
-        <AnimatedPressable className="w-8 h-8 rounded-full  items-center justify-center mr-4 border-2 border-text-disabled">
+        <AnimatedPressable
+          style={{
+            width: 24,
+            height: 24,
+          }}
+          className=" rounded-full  items-center justify-center mr-4 border-2 border-text-disabled"
+        >
           <AnimatedPressable
             onPress={handleToggle}
             accessibilityRole="checkbox"

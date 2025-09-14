@@ -41,7 +41,7 @@ const BundleFilter = memo(
       <Animated.View
         style={animatedStyle}
         entering={FadeIn.duration(300)}
-        className="my-2 bg-bg"
+        className="my-2 bg-fore"
       >
         <ScrollView
           horizontal

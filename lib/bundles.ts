@@ -64,6 +64,23 @@ export const fetchTrendingBundles = async (): Promise<Bundle[]> => {
     throw error;
   }
 };
+export const fetchBundles = async (): Promise<Bundle[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("bundles")
+      .select("*")
+      .order("enrolled_users", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching bundles:", error);
+      throw error;
+    }
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchTrendingBundles:", error);
+    throw error;
+  }
+};
 
 // Fetch a single bundle by ID
 export const fetchBundleById = async (id: string): Promise<Bundle | null> => {

@@ -200,7 +200,7 @@ const OrganizeModes: React.FC = () => {
         </View>
 
         <ScrollView
-          className=" relative h-[100%] rounded-t-2xl"
+          className=" relative h-[100%] rounded-t-3xl bg-fore"
           contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
         >

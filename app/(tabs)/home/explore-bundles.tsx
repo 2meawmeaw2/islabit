@@ -1,71 +1,76 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   Pressable,
   TextInput,
   Image,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { fetchBundles } from "@/lib/bundles";
 import { DEFAULT_CATEGORIES } from "@/types/habit";
+import { useExploreStore } from "@/store/exploreStore";
 
 const ExploreBundles = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const {
+    bundles,
+    isLoading,
+    error,
+    hasMore,
+    fetchMoreBundles,
+    fetchByCategory,
+    clearFilters,
+    setError,
+  } = useExploreStore();
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [bundles, setBundles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Simple data fetching without caching
-  React.useEffect(() => {
-    const loadBundles = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const fetchedBundles = await fetchBundles();
-        setBundles(fetchedBundles);
-      } catch (err) {
-        console.error("Error loading bundles:", err);
-        setError("حدث خطأ في تحميل الحزم");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadBundles();
+  // Initial load
+  useEffect(() => {
+    loadInitialBundles();
   }, []);
 
-  // Use Supabase bundles only
-  const displayBundles = bundles;
-
-  // Filter bundles based on search and category
-  const filteredBundles = useMemo(() => {
-    let filtered = displayBundles;
-
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (bundle: any) =>
-          bundle.title.includes(searchQuery) ||
-          bundle.subtitle.includes(searchQuery) ||
-          bundle.description.includes(searchQuery)
-      );
+  const loadInitialBundles = async () => {
+    try {
+      await fetchMoreBundles();
+    } catch (err) {
+      console.error("Error loading bundles:", err);
+      setError("حدث خطأ في تحميل الحزم");
     }
+  };
 
-    if (selectedCategory) {
-      filtered = filtered.filter(
-        (bundle: any) => bundle.category.text === selectedCategory
-      );
+  // Handle category selection
+  const handleCategorySelect = async (category: string | null) => {
+    setSelectedCategory(category);
+    try {
+      if (category === null) {
+        await clearFilters();
+      } else {
+        await fetchByCategory(category);
+      }
+    } catch (err) {
+      console.error("Error filtering by category:", err);
+      setError("حدث خطأ في تصفية العناصر");
     }
+  };
 
-    return filtered;
-  }, [searchQuery, selectedCategory]);
+  // Handle infinite scroll
+  const handleLoadMore = async () => {
+    if (!isLoading && hasMore) {
+      if (selectedCategory) {
+        await fetchByCategory(selectedCategory);
+      } else {
+        await fetchMoreBundles();
+      }
+    }
+  };
 
   const handleBundlePress = (bundle: any) => {
     router.push({
@@ -73,65 +78,72 @@ const ExploreBundles = () => {
       params: { bundleData: JSON.stringify(bundle) },
     });
   };
+
   const handleBackPress = () => {
     router.navigate("/home");
   };
 
+  // Filter bundles based on search
+  const filteredBundles = bundles.filter(
+    (bundle: any) =>
+      searchQuery === "" ||
+      bundle.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bundle.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bundle.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <StatusBar style="light" />
-
-      {/* Simple Header */}
-      <View className="bg-fore px-4 py-4">
-        <View className="flex-row items-center justify-between">
+      {/* Header */}
+      <View className="bg-fore px-4 py-2 border-b border-bg">
+        <View className="flex-row items-center justify-between mb-4">
           <Pressable
             onPress={handleBackPress}
-            className="w-8 h-8 items-center justify-center"
+            className="w-10 h-10 items-center justify-center bg-bg/50 rounded-full"
           >
-            <Ionicons name="arrow-back" size={20} color="#00AEEF" />
+            <Ionicons name="arrow-back" size={20} color="#F5F5F5" />
           </Pressable>
           <Text className="font-ibm-plex-arabic-bold text-xl text-text-primary">
             اكتشف الرحلات
           </Text>
         </View>
       </View>
-
-      {/* Bundles Grid */}
-      <ScrollView
-        className="flex-1 "
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      >
-        <View className="px-4 py-4">
-          <View className="bg-fore rounded-full flex-row-reverse items-center px-5 py-2">
+      <ScrollView>
+        {/* Search Bar */}
+        <View className="bg-fore mx-4 my-4 rounded-2xl flex-row-reverse items-center px-4 py-3 mt-2">
+          <View className="bg-fore/30 p-2 rounded-full">
             <Ionicons name="search" size={18} color="#6C7684" />
-            <TextInput
-              placeholder="ابحث عن رحلة..."
-              placeholderTextColor="#6C7684"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              className="flex-1 text-right font-ibm-plex-arabic text-text-primary mr-3"
-            />
           </View>
+          <TextInput
+            placeholder="ابحث عن رحلة..."
+            placeholderTextColor="#6C7684"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            className="flex-1 text-right font-ibm-plex-arabic text-text-primary mr-3"
+          />
         </View>
-
-        <View className=" mb-4">
+        {/* Categories */}
+        <View className="mb-6">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 20 }}
-            style={{ transform: [{ scaleX: -1 }] }} // Flip the entire ScrollView
+            style={{ transform: [{ scaleX: -1 }] }}
           >
             <Pressable
-              onPress={() => setSelectedCategory(null)}
-              style={{ transform: [{ scaleX: -1 }] }} // Flip back individual items
-              className={`mr-3 px-3 py-2 rounded-full ${
-                selectedCategory === null ? "bg-text-brand" : "bg-fore"
+              onPress={() => handleCategorySelect(null)}
+              style={{ transform: [{ scaleX: -1 }] }}
+              className={`mr-3 px-4 py-2 rounded-full ${
+                selectedCategory === null
+                  ? "bg-text-brand border-2 border-text-brand"
+                  : "bg-fore border-2 border-bg"
               }`}
             >
               <Text
-                className={`font-ibm-plex-arabic-medium text-sm text-text-primary
-                `}
+                className={`font-ibm-plex-arabic-medium text-sm ${
+                  selectedCategory === null ? "text-white" : "text-text-primary"
+                }`}
               >
                 الكل
               </Text>
@@ -140,18 +152,18 @@ const ExploreBundles = () => {
             {DEFAULT_CATEGORIES.map((category) => (
               <Pressable
                 key={category.text}
-                onPress={() => setSelectedCategory(category.text)}
-                style={{ transform: [{ scaleX: -1 }] }} // Flip back individual items
-                className={`mr-3 px-3 border  rounded-full ${
+                onPress={() => handleCategorySelect(category.text)}
+                style={{ transform: [{ scaleX: -1 }] }}
+                className={`mr-3 px-4 py-2 rounded-full ${
                   selectedCategory === category.text
-                    ? "bg-text-brand"
-                    : "bg-fore  "
+                    ? "bg-text-brand border-2 border-text-brand"
+                    : "bg-fore border-2 border-bg"
                 }`}
               >
                 <Text
-                  className={`font-ibm-plex-arabic  py-2 text-sm ${
+                  className={`font-ibm-plex-arabic-medium text-sm ${
                     selectedCategory === category.text
-                      ? "text-text-primary"
+                      ? "text-white"
                       : "text-text-primary"
                   }`}
                 >
@@ -161,21 +173,13 @@ const ExploreBundles = () => {
             ))}
           </ScrollView>
         </View>
-        {/* Loading State */}
-        {loading ? (
-          <View className="flex-1 justify-center items-center py-20">
-            <ActivityIndicator size="large" color="#22C55E" />
-            <Text className="font-ibm-plex-arabic text-text-muted mt-4">
-              جاري التحميل...
-            </Text>
-          </View>
-        ) : error ? (
+        {error ? (
           <View className="flex-1 justify-center items-center py-20 px-6">
             <Text className="font-ibm-plex-arabic text-red-500 text-center mb-4">
-              {error || "فشل في تحميل الحزم"}
+              {error}
             </Text>
             <Pressable
-              onPress={() => window.location.reload()}
+              onPress={loadInitialBundles}
               className="bg-fore px-6 py-3 rounded-full"
             >
               <Text className="font-ibm-plex-arabic text-text-primary">
@@ -191,19 +195,21 @@ const ExploreBundles = () => {
                 {filteredBundles.length} رحلة متاحة
               </Text>
             </View>
-            <View className="w-full px-7">
+
+            <View>
               {filteredBundles.map((bundle: any) => (
                 <Pressable
                   key={bundle.id}
                   onPress={() => handleBundlePress(bundle)}
-                  className="w-full mb-4 rounded-2xl overflow-hidden"
+                  className="w-[92%] mx-auto mb-4 rounded-2xl overflow-hidden bg-fore"
                   style={{ height: 200 }}
                 >
                   {/* Background Image */}
                   <Image
                     source={require("../../../assets/images/logo.png")}
-                    className="absolute inset-0 -left-1/2 translate-x-[25%] w-full h-full"
+                    className="absolute inset-0 w-full h-full"
                     style={{ opacity: 0.6 }}
+                    resizeMode="cover"
                   />
 
                   {/* Gradient Overlay */}
@@ -213,28 +219,28 @@ const ExploreBundles = () => {
                       "rgba(0,0,0,0.2)",
                       "rgba(0,0,0,0.9)",
                     ]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
+                    start={{ x: 1, y: 1 }}
+                    end={{ x: 0, y: 0 }}
                     className="absolute inset-0 z-10"
                   />
 
                   {/* Content Container */}
                   <View className="relative z-20 h-full p-4 flex-col justify-between">
                     {/* Top Section */}
-                    <View className="flex-row-reverse items-start justify-between">
+                    <View className="flex-row-reverse items-center justify-between">
                       {/* Category Badge */}
-                      <View className="px-3 ">
+                      <View className="bg-black/30 px-3 py-1 rounded-full">
                         <Text
                           style={{ color: bundle.category.hexColor }}
-                          className="font-ibm-plex-arabic-semibold pb-2 text-xs"
+                          className="font-ibm-plex-arabic-medium text-xs"
                         >
                           {bundle.category.text}
                         </Text>
                       </View>
 
                       {/* Habits Count Badge */}
-                      <View className=" rounded-full px-3 py-1">
-                        <Text className="font-ibm-plex-arabic-semibold text-xs text-text-brand">
+                      <View className="bg-black/30 rounded-full px-3 py-1">
+                        <Text className="font-ibm-plex-arabic-medium text-xs text-white">
                           {bundle.habits.length} عادة
                         </Text>
                       </View>
@@ -260,30 +266,38 @@ const ExploreBundles = () => {
                     <View className="flex-row-reverse items-center justify-between">
                       {/* Description Preview */}
                       <Text
-                        className="font-ibm-plex-arabic text-xs text-white/80 text-left"
+                        className="font-ibm-plex-arabic text-xs text-white/80 text-right"
                         numberOfLines={1}
                       >
-                        {bundle.description.substring(0, 40)}...
+                        {bundle.description.substring(0, 60)}...
                       </Text>
                     </View>
                   </View>
                 </Pressable>
               ))}
-            </View>
-            {/* Empty State */}
-            {filteredBundles.length === 0 && (
-              <View className="items-center justify-center py-20">
-                <View className="w-16 h-16 bg-fore rounded-full items-center justify-center mb-4">
-                  <Ionicons name="search-outline" size={30} color="#6C7684" />
+
+              {/* Loading Footer */}
+              {isLoading && (
+                <View className="py-4">
+                  <ActivityIndicator size="large" color="#22C55E" />
                 </View>
-                <Text className="font-ibm-plex-arabic-semibold text-base text-text-primary text-center mb-2">
-                  لم نجد رحلات
-                </Text>
-                <Text className="font-ibm-plex-arabic text-sm text-text-muted text-center">
-                  جرب البحث بكلمات مختلفة أو اختر فئة أخرى
-                </Text>
-              </View>
-            )}
+              )}
+
+              {/* Empty State */}
+              {!isLoading && filteredBundles.length === 0 && (
+                <View className="items-center justify-center py-20">
+                  <View className="w-16 h-16 bg-fore rounded-full items-center justify-center mb-4">
+                    <Ionicons name="search-outline" size={30} color="#6C7684" />
+                  </View>
+                  <Text className="font-ibm-plex-arabic-semibold text-base text-text-primary text-center mb-2">
+                    لم نجد رحلات
+                  </Text>
+                  <Text className="font-ibm-plex-arabic text-sm text-text-muted text-center">
+                    جرب البحث بكلمات مختلفة أو اختر فئة أخرى
+                  </Text>
+                </View>
+              )}
+            </View>
           </>
         )}
       </ScrollView>

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { View, Pressable, Dimensions, Text } from "react-native";
 import * as Haptics from "expo-haptics";
-import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { Feather, MaterialIcons, Octicons } from "@expo/vector-icons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 
 import Animated, {
@@ -254,7 +254,7 @@ export function FloatingActionMenu({
       case "top-right":
         return { ...base, top: 60, right: 20 };
       case "top-left":
-        return { ...base, top: 5, left: 20 };
+        return { ...base, top: 0, left: 10 };
       default:
         return { ...base, bottom: 20, right: 20 };
     }
@@ -341,14 +341,22 @@ export function FloatingActionMenu({
                     height: "100%",
                   }}
                 />
-                <MaterialIcons
-                  name={item.icon as any}
-                  size={20}
-                  color={item.color}
-                />
+
+                {item.icon === "notifications" && (
+                  <MaterialIcons name="notifications" size={20} color="white" />
+                )}
+                {item.icon === "add-circle" && (
+                  <MaterialIcons name="add-circle" size={20} color="white" />
+                )}
+                {item.icon === "compass" && (
+                  <Octicons name="graph" size={20} color="white" />
+                )}
+                {item.icon === "delete-forever" && (
+                  <Octicons name="repo-deleted" size={20} color="white" />
+                )}
               </View>
               <Text
-                className="text-text-primary font-ibm-plex-arabic-semibold"
+                className="text-text-primary text-center font-ibm-plex-arabic-semibold"
                 style={{
                   flex: 1,
                 }}
@@ -367,7 +375,6 @@ export function FloatingActionMenu({
               width: 50,
               height: 50,
               borderRadius: 28,
-              backgroundColor: "#667eea",
               justifyContent: "center",
               alignItems: "center",
               shadowColor: "#667eea",
@@ -379,17 +386,6 @@ export function FloatingActionMenu({
             mainButtonStyle,
           ]}
         >
-          <LinearGradient
-            colors={["#00AEEF", "#1A1E1F"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-              borderRadius: 28,
-            }}
-          />
           <Feather name="align-left" size={24} color="white" />
         </AnimatedPressable>
       </View>
