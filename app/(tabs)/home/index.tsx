@@ -23,6 +23,7 @@ const AllHabits = () => {
 
   const handleBundlePress = (bundle: any) => {
     // Serialize the bundle object to JSON string
+    console.log("bundle");
     router.push({
       pathname: "/(tabs)/home/bundleCommit",
       params: {

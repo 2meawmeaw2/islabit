@@ -268,7 +268,7 @@ export function CommentInput({
       {title && (
         <Animated.View style={headerAnimatedStyle}>
           <View className="flex-row-reverse items-center justify-between mb-4">
-            <Text className="text-text-brand font-ibm-plex-arabic-bold text-lg text-right">
+            <Text className="text-text-brand font-ibm-plex-arabic-semibold text-lg text-right">
               {title}
             </Text>
           </View>

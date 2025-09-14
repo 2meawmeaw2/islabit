@@ -7,7 +7,8 @@ import { fmtArabicDateMonthAndNumber } from "@/lib/dates";
 import { PRAYERS } from "@/assets/constants/prayers";
 import { loadUserById } from "@/lib/usersTable";
 import { useHabitsStore } from "@/store/habitsStore";
-import { Ionicons } from "@expo/vector-icons";
+import { FloatingActionMenu } from "@/components/FloatingActionMenu";
+import { AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useBundlesStore } from "@/store/bundlesStore";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -178,7 +179,7 @@ const OrganizeModes: React.FC = () => {
   return (
     <>
       <SafeAreaView className="h-full font-ibm-plex-arabic bg-bg">
-        <View className="w-full h-[60px] gap-1 bg-bg px-5 flex-row-reverse justify-between items-center">
+        <View className="w-full relative h-[60px] gap-1 bg-bg px-5 flex-row-reverse justify-between items-center">
           <View>
             <View style={S.rowBetween}>
               <Text className="font-ibm-plex-arabic-bold text-text-brand text-2xl my-1">
@@ -189,36 +190,17 @@ const OrganizeModes: React.FC = () => {
               {fmtArabicDateMonthAndNumber(new Date())}
             </Text>
           </View>
-          <View className="flex-row">
-            <Pressable
-              onPress={handleGoToTracking}
-              className="bg-text-brand/70 rounded-full justify-center items-center h-10 w-10 mr-2"
-            >
-              <Ionicons name="navigate-outline" size={20} color="white" />
-            </Pressable>
-            <Pressable
-              onPress={handleClearAllStorage}
-              className="bg-red-500 rounded-full justify-center items-center h-10 w-10 mr-2"
-            >
-              <Ionicons name="trash" size={20} color="white" />
-            </Pressable>
-            <Pressable
-              onPress={handleAddHabit}
-              className="bg-text-brand rounded-full justify-center items-center h-10 w-10"
-            >
-              <Ionicons name="add" size={30} color="white" />
-            </Pressable>
-            <Pressable
-              onPress={() => router.navigate("/(tabs)/time/salatTime")}
-              className="bg-text-brand rounded-full justify-center items-center h-10 w-10"
-            >
-              <Ionicons name="alarm-sharp" size={30} color="white" />
-            </Pressable>
-          </View>
+          <FloatingActionMenu
+            onNavigate={handleGoToTracking}
+            onClear={handleClearAllStorage}
+            onAddHabit={handleAddHabit}
+            onSalatTime={() => router.navigate("/(tabs)/time/salatTime")}
+            position="top-left"
+          />
         </View>
 
         <ScrollView
-          className="bg-fore relative h-[100%] rounded-t-2xl"
+          className=" relative h-[100%] rounded-t-2xl"
           contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
         >
@@ -232,11 +214,11 @@ const OrganizeModes: React.FC = () => {
               onSelectBundle={setSelectedBundleId}
             />
           </View>
-          <View className="mt-6">
+          <View>
             {habits.length === 0 ? (
               <View className="mx-4 mt-8 items-center">
                 <View className="bg-bg rounded-2xl p-8 items-center border border-text-brand">
-                  <Ionicons name="leaf-outline" size={48} color="#6C7684" />
+                  <AntDesign name="heart" size={48} color="#6C7684" />
                   <Text className="text-text-primary font-ibm-plex-arabic-bold text-xl mt-4 text-center">
                     ابدأ رحلتك
                   </Text>
@@ -247,7 +229,7 @@ const OrganizeModes: React.FC = () => {
                     onPress={handleAddHabit}
                     className="mt-6 bg-text-brand rounded-full px-6 py-3 flex-row-reverse items-center"
                   >
-                    <Ionicons name="add-circle" size={20} color="white" />
+                    <AntDesign name="plus" size={20} color="white" />
                     <Text className="text-white font-ibm-plex-arabic-medium mr-2">
                       أضف عادة جديدة
                     </Text>

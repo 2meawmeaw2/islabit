@@ -65,9 +65,8 @@ const WeekStrip: React.FC<WeekStripProps> = ({
   const itemWidth = Math.max(40, rowWidth / 7); // keep a sensible minimum
 
   // responsive sizes derived from item width
-  const containerHeight = Math.max(80, Math.min(100, itemWidth * 1.3));
+  const containerHeight = Math.max(65, Math.min(100, itemWidth * 1.3));
   const containerWidth = Math.max(45, Math.min(70, itemWidth * 0.9));
-  const dateFont = Math.round(Math.max(18, Math.min(32, itemWidth * 0.45)));
   const dayFont = Math.round(Math.max(10, Math.min(14, itemWidth * 0.25)));
   const isCompact = itemWidth < 56;
 
@@ -88,7 +87,7 @@ const WeekStrip: React.FC<WeekStripProps> = ({
   const rowDirection = "row-reverse";
 
   return (
-    <View className="rounded-2xl bg-fore">
+    <View className="rounded-2xl bg-fore " style={{ paddingHorizontal: 5 }}>
       <View
         style={[styles.row, { flexDirection: rowDirection }]}
         onLayout={onRowLayout}
@@ -165,18 +164,13 @@ export default function DisplayDays({
   return (
     <View
       style={styles.safe}
-      className=" fixed top-0 mx-2  rounded-bl-2xl rounded-br-sm"
+      className=" fixed top-0 mx-2  rounded-bl-2xl rounded-br-sm "
     >
-      <View
-        style={styles.containerWrapper}
-        className="bg-fore rounded-bl-2xl rounded-br-2xl"
-      >
-        <WeekStrip
-          selectedDate={selectedDate}
-          weekStartsOn={0}
-          onChange={onChange}
-        />
-      </View>
+      <WeekStrip
+        selectedDate={selectedDate}
+        weekStartsOn={0}
+        onChange={onChange}
+      />
     </View>
   );
 }
@@ -185,17 +179,14 @@ const COLORS = {
   bg: "#1A1E1F",
   textMuted: "#6B7280", // Darker muted text
   text: "#FFFFFF",
-  selectedBg: "#00AEEF", // Blue highlight for selected background
+  selectedBg: "#00AEEF99", // Blue highlight for selected background
   selectedText: "#FFFFFF",
 };
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  containerWrapper: {
-    paddingTop: 10,
+    marginTop: 10,
     paddingHorizontal: 5,
   },
 

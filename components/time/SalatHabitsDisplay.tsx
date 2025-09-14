@@ -25,11 +25,13 @@ import Animated, {
 import PercentageCircle from "../PercentageCircle";
 import { usePrayerTimesStore } from "@/store/prayerTimesStore";
 import { dayjs } from "@/lib/daysjs";
+import { MaterialIcons } from "@expo/vector-icons";
 type SalatHabit = {
   id: string;
   title: string;
   description?: string;
   streak: number;
+  quote?: string;
   completed: {
     date: string;
     prayer: string;
@@ -161,7 +163,12 @@ export const SalatHabitsDisplay: React.FC<Props> = memo(
       <Animated.View
         entering={FadeInDown.duration(300).springify()}
         layout={Layout.springify().damping(15)}
-        className="mx-2 mb-6 mt-4 rounded-2xl border bg-bg/50 border-slate-600/30 p-3 justify-center"
+        style={{
+          borderWidth: 1,
+          borderRadius: 16,
+          borderColor: completionPercentage === 100 ? "#00AEEF99" : "#334155",
+        }}
+        className="mx-2 mb-6 mt-4   bg-bg/50 p-3 justify-center"
       >
         {/* Clean Salat Header */}
         <AnimatedPressable
@@ -459,16 +466,12 @@ const HabitItem: React.FC<{
     opacity: isCompletedAnimation.value,
   }));
 
-  const uncompletedCheckAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: isCompletedAnimation.value === 1 ? 0 : 1,
-  }));
-
   const textAnimatedStyle = useAnimatedStyle(() => ({
     color: isCompletedAnimation.value === 1 ? "#9CA3AF" : "#FFFFFF",
     textDecorationLine:
       isCompletedAnimation.value === 1 ? "line-through" : "none",
   }));
-
+  console.log("habit", habit);
   // Removed separate opacity state effect; opacity now solely derives from the shared value above
 
   return (
@@ -496,18 +499,18 @@ const HabitItem: React.FC<{
     >
       <Animated.View
         style={[animatedStyle, { marginBottom: 10 }]}
-        className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-2xl p-4 shadow-lg border border-slate-600/30"
+        className="flex-row-reverse gap-3 items-center bg-slate-700/80 rounded-3xl px-4 py-2 shadow-lg border border-slate-600/30"
       >
         {/* Enhanced Toggle Button with better animations */}
         <Pressable onPress={() => onPress(habit)}>
           <Animated.View
             style={{ width: 56, height: 56 }}
-            className=" rounded-2xl items-center justify-center bg-yellow-500/80"
+            className=" rounded-2xl items-center justify-center bg-text-brand/80"
             entering={FadeIn.delay(150 + index * 40)
               .duration(400)
               .easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
           >
-            <Ionicons name="logo-vercel" size={16} color="#000" />
+            <MaterialIcons name="access-alarm" size={24} color="black" />
           </Animated.View>
         </Pressable>
         {/* Clean Habit Content with smooth transitions */}
@@ -525,13 +528,25 @@ const HabitItem: React.FC<{
             accessibilityLabel={`${habit.title} - ${isCompletedToday ? "مكتمل" : "غير مكتمل"}`}
           >
             <View className="flex-row-reverse items-center mb-1 ">
-              <Animated.Text
-                className="font-ibm-plex-arabic-medium text-lg flex-1 text-right py-2"
-                style={textAnimatedStyle}
-                numberOfLines={1}
-              >
-                {habit.title}
-              </Animated.Text>
+              <View className="flex-1">
+                <Animated.Text
+                  className="font-ibm-plex-arabic-medium text-lg text-right py-1"
+                  style={textAnimatedStyle}
+                  numberOfLines={1}
+                >
+                  {habit.title}
+                </Animated.Text>
+
+                {/* Habit Quote/Description */}
+                {habit.quote && (
+                  <Animated.Text
+                    className="font-ibm-plex-arabic-light text-sm text-right text-text-disabled py-1"
+                    numberOfLines={2}
+                  >
+                    {habit.quote}
+                  </Animated.Text>
+                )}
+              </View>
 
               {/* Bundle Indicator */}
             </View>

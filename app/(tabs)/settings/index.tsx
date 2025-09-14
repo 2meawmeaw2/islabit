@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ProfileCard from "../../../components/ProfileCard";
+import LanguagesScreen from "./languages";
 
 export default function SettingsScreen() {
   // Simple settings data organized into two groups
@@ -44,7 +46,7 @@ export default function SettingsScreen() {
       activeOpacity={0.7}
       onPress={() => {
         if (item.key === "language") {
-          router.push("./languages");
+          setIsModalVisible(true);
         } else {
           console.log(`${item.label} pressed`);
         }
@@ -64,32 +66,41 @@ export default function SettingsScreen() {
       )}
     </TouchableOpacity>
   );
-
+  const [isModalVisible, setIsModalVisible] = useState(false);
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      {/* Blue Header Bar */}
-      <View
-        style={{ borderBottomRightRadius: 20, borderBottomLeftRadius: 20 }}
-        className="bg-[#282E2F] rounded-b-3xl pb-6 pt-4"
-      >
-        <Text className="text-white text-2xl font-ibm-plex-arabic-bold text-center">
-          أنا
-        </Text>
-      </View>
-
-      <ScrollView className="flex-1 px-4 pt-6">
-        {/* First Settings Card */}
-        <View className="bg-fore rounded-2xl mb-4 overflow-hidden">
-          {firstGroup.map((item, index) =>
-            renderSettingItem(item, index === firstGroup.length - 1)
-          )}
+      <ScrollView contentContainerClassName="pb-32 ">
+        <Modal
+          presentationStyle="formSheet"
+          visible={isModalVisible}
+          animationType="slide"
+        >
+          <LanguagesScreen setIsModalVisible={setIsModalVisible} />
+        </Modal>
+        <View
+          style={{ borderBottomRightRadius: 20, borderBottomLeftRadius: 20 }}
+          className="bg-[#282E2F] rounded-b-3xl pb-6 pt-4"
+        >
+          <Text className="text-white text-2xl font-ibm-plex-arabic-bold text-center">
+            أنا
+          </Text>
         </View>
+        {/* Profile Card */}
+        <ProfileCard />
+        <View className="px-4 py-2">
+          {/* First Settings Card */}
+          <View className="bg-fore rounded-2xl mb-4 overflow-hidden">
+            {firstGroup.map((item, index) =>
+              renderSettingItem(item, index === firstGroup.length - 1)
+            )}
+          </View>
 
-        {/* Second Settings Card */}
-        <View className="bg-fore rounded-2xl mb-6 overflow-hidden">
-          {secondGroup.map((item, index) =>
-            renderSettingItem(item, index === secondGroup.length - 1)
-          )}
+          {/* Second Settings Card */}
+          <View className="bg-fore rounded-2xl mb-6 overflow-hidden">
+            {secondGroup.map((item, index) =>
+              renderSettingItem(item, index === secondGroup.length - 1)
+            )}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

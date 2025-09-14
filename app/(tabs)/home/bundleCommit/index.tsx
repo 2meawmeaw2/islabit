@@ -374,143 +374,122 @@ const SingleBundleScreen = () => {
             entering={FadeInUp.delay(400).duration(600)}
             className="px-6 mb-8"
           >
-            <Text className="text-text-brand font-ibm-plex-arabic-bold text-xl pb-4 text-right">
+            <Text className="text-text-brand  font-ibm-plex-arabic-semibold text-xl pb-6 text-right">
               العادات في هذه الرحلة
             </Text>
-            <View className="gap-3">
-              {safeBundle.habits.map((h: any, i: number) => (
-                <Animated.View
-                  key={i}
-                  entering={FadeInUp.delay(500 + i * 100).duration(600)}
-                  layout={Layout.springify().damping(20).stiffness(200)}
-                  className="bg-fore rounded-2xl border border-white/10 shadow-sm overflow-hidden"
-                >
-                  {/* Habit Header - Clickable */}
-                  <Pressable
-                    onPress={() => toggleHabitDropdown(i)}
-                    className="px-4 py-3 active:opacity-80"
-                  >
-                    <View className="flex-row-reverse items-center gap-3">
-                      {/* Habit emoji - only show if emoji exists */}
-                      {typeof h !== "string" && h.emoji && (
-                        <View className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center">
-                          <Text className="text-2xl">{h.emoji}</Text>
-                        </View>
-                      )}
 
-                      {/* Habit content */}
+            <View className="gap-4">
+              {safeBundle.habits.map((habit, index) => (
+                <Animated.View
+                  key={index}
+                  entering={FadeInUp.delay(500 + index * 100).duration(600)}
+                  layout={Layout.springify().damping(20).stiffness(200)}
+                  className="bg-gray-800/50 backdrop-blur-sm rounded-3xl border border-gray-700/50 overflow-hidden shadow-lg"
+                >
+                  {/* Habit Header */}
+                  <Pressable
+                    onPress={() => toggleHabitDropdown(index)}
+                    className="px-6 py-5 active:opacity-80"
+                  >
+                    <View className="flex-row-reverse items-center gap-4">
+                      {/* Habit Icon */}
+                      <View className="w-14 h-14 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 rounded-2xl items-center justify-center border border-cyan-500/30">
+                        <Text className="text-3xl ">{habit.emoji}</Text>
+                      </View>
+
+                      {/* Habit Content */}
                       <View className="flex-1">
-                        <Text
-                          style={{ paddingBottom: 6 }}
-                          className="text-text-primary  font-ibm-plex-arabic  text-2sm text-right "
-                        >
-                          {typeof h === "string" ? h : h.title}
+                        <Text className="text-white font-ibm-plex-arabic-light text-lg text-right mb-1">
+                          {habit.title}
                         </Text>
-                        <Text className="text-text-disabled font-ibm-plex-arabic-light text-xs text-right pb-2">
-                          {typeof h === "string"
-                            ? "عادة مهمة لتحسين حياتك اليومية"
-                            : h.subtitle || "عادة مهمة لتحسين حياتك اليومية"}
+                        <Text className="text-gray-400 font-ibm-plex-arabic-light text-sm text-right">
+                          {habit.subtitle || "تفكر ومطمئنة"}
                         </Text>
                       </View>
 
-                      {/* Expandable Arrow */}
-                      <Animated.View style={arrowAnimatedStyles[i] || {}}>
-                        <Ionicons
-                          name="chevron-down"
-                          size={20}
-                          color="#9CA3AF"
-                        />
+                      {/* Expand Arrow */}
+                      <Animated.View>
+                        <View className="w-8 h-8 bg-gray-700/50 rounded-full items-center justify-center">
+                          <Ionicons
+                            name="chevron-down"
+                            size={18}
+                            color="#9CA3AF"
+                          />
+                        </View>
                       </Animated.View>
                     </View>
                   </Pressable>
 
-                  {/* Dropdown Content */}
-                  {expandedHabits.has(i) && (
+                  {/* Expanded Content */}
+                  {expandedHabits.has(index) && (
                     <Animated.View
                       entering={FadeInUp.duration(300)}
                       exiting={FadeOutUp.duration(300)}
                       layout={Layout.springify().damping(15).stiffness(300)}
-                      className="px-4 pb-4 border-t border-white/10"
+                      className="px-6 pb-6 border-t border-gray-700/30"
                     >
-                      <View className="pt-4">
-                        <Text className="text-text-primary font-ibm-plex-arabic text-sm leading-6 text-right mb-3">
-                          {typeof h === "string"
-                            ? "عادة مهمة لتحسين حياتك اليومية"
-                            : h.description || "لا يوجد وصف متاح لهذه العادة."}
+                      <View className="pt-5">
+                        {/* Description */}
+                        <Text className="text-gray-300 font-ibm-plex-arabic text-base leading-6 text-right mb-6">
+                          {habit.description || "لا يوجد وصف متاح لهذه العادة."}
                         </Text>
 
-                        {/* Habit Schedule - Days */}
-                        <View className="mb-3">
-                          <Text className="text-text-secondary font-ibm-plex-arabic-medium text-xs mb-2 text-right">
-                            أيام التطبيق:
-                          </Text>
-                          <View className="flex-row-reverse flex-wrap gap-1">
-                            {dayNames.map((day, index) => {
-                              const isRelated =
-                                typeof h !== "string" &&
-                                Array.isArray(h.relatedDays) &&
-                                h.relatedDays.includes(index);
-
-                              return (
-                                <>
-                                  {isRelated && (
-                                    <View
-                                      key={index}
-                                      className={`px-2 py-1 rounded-full items-center justify-center `}
-                                    >
-                                      <Text
-                                        className={`text-xs font-ibm-plex-arabic-medium text-text-brand`}
-                                        numberOfLines={1}
-                                      >
-                                        {day}
-                                      </Text>
-                                    </View>
-                                  )}
-                                </>
-                              );
-                            })}
-                          </View>
-                        </View>
-
-                        {/* Habit Schedule - Salats */}
-                        <View>
-                          <Text className="text-text-secondary font-ibm-plex-arabic-medium text-xs mb-2 text-right">
-                            الأوقات المرتبطة:
-                          </Text>
-                          <View className="flex-row-reverse flex-wrap gap-2">
-                            {PRAYERS.map((prayer, index) => {
-                              const isRelated =
-                                typeof h !== "string" &&
-                                Array.isArray(h.relatedSalat) &&
-                                h.relatedSalat.includes(prayer.key);
-
-                              return (
-                                <>
-                                  {isRelated && (
-                                    <View
-                                      key={index}
-                                      className={`px-2 py-1 rounded-full`}
-                                    >
-                                      <Text
-                                        className={`text-xs font-ibm-plex-arabic-medium text-text-brand`}
-                                      >
-                                        {prayer.name}
-                                      </Text>
-                                    </View>
-                                  )}
-                                </>
-                              );
-                            })}
+                        {/* Schedule Section */}
+                        <View className="space-y-5">
+                          {/* Days */}
+                          <View>
+                            <Text className="text-gray-400 font-ibm-plex-arabic-semibold text-sm mb-3 text-right">
+                              أيام التطبيق:
+                            </Text>
+                            <View className="flex-row-reverse flex-wrap gap-2">
+                              {dayNames.map((day, dayIndex) => {
+                                const isRelated =
+                                  habit.relatedDays?.includes(dayIndex);
+                                return isRelated ? (
+                                  <View
+                                    key={dayIndex}
+                                    className="bg-cyan-500/20 border border-cyan-500/40 px-3 py-2 rounded-xl"
+                                  >
+                                    <Text className="text-cyan-300 text-xs font-ibm-plex-arabic">
+                                      {day}
+                                    </Text>
+                                  </View>
+                                ) : null;
+                              })}
+                            </View>
                           </View>
 
-                          {/* Fallback for habits without specific salat info */}
-                          {typeof h !== "string" &&
-                            (!Array.isArray(h.relatedSalat) ||
-                              h.relatedSalat.length === 0) && (
-                              <Text className="text-text-disabled font-ibm-plex-arabic text-xs text-right mt-2">
+                          {/* Prayer Times */}
+                          <View>
+                            <Text className="text-gray-400 font-ibm-plex-arabic-semibold text-sm my-3 text-right">
+                              الأوقات المرتبطة:
+                            </Text>
+                            <View className="flex-row-reverse flex-wrap gap-2">
+                              {PRAYERS.map((prayer, prayerIndex) => {
+                                const isRelated = habit.relatedSalat?.includes(
+                                  prayer.key
+                                );
+                                return isRelated ? (
+                                  <View
+                                    key={prayerIndex}
+                                    className="bg-blue-500/20 border border-blue-500/40 px-3 py-2 rounded-xl"
+                                  >
+                                    <Text className="text-blue-300 text-xs font-ibm-plex-arabic">
+                                      {prayer.name}
+                                    </Text>
+                                  </View>
+                                ) : null;
+                              })}
+                            </View>
+
+                            {/* Fallback */}
+                            {!habit.relatedSalat ||
+                            habit.relatedSalat.length === 0 ? (
+                              <Text className="text-gray-500 font-medium text-sm text-right mt-2">
                                 يمكن تطبيق هذه العادة في أي وقت
                               </Text>
-                            )}
+                            ) : null}
+                          </View>
                         </View>
                       </View>
                     </Animated.View>
@@ -527,7 +506,7 @@ const SingleBundleScreen = () => {
               entering={FadeInUp.delay(600).duration(600)}
               className="px-6 mb-8"
             >
-              <Text className="text-text-brand font-ibm-plex-arabic-bold text-xl mb-4 text-right">
+              <Text className="text-text-brand font-ibm-plex-arabic-semibold text-xl mb-4 text-right">
                 الفوائد الرئيسية
               </Text>
               <View className="gap-3">
@@ -567,7 +546,7 @@ const SingleBundleScreen = () => {
             entering={FadeInUp.delay(1000).duration(600)}
             className="px-6 mb-8"
           >
-            <Text className="text-text-brand font-ibm-plex-arabic-bold text-xl mb-4 text-right">
+            <Text className="text-text-brand font-ibm-plex-arabic-semibold text-xl mb-4 text-right">
               التعليقات ({comments.length})
             </Text>
 

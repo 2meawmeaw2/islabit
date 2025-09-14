@@ -81,7 +81,11 @@ const BundleConfirmationScreen = () => {
 
   // Animate button when scroll position changes
   useEffect(() => {
-    buttonHeight.value = withTiming(isNearEnd ? 100 : 60, { duration: 200 });
+    buttonHeight.value = withSpring(isNearEnd ? 100 : 60, {
+      mass: 1,
+      damping: 15,
+      stiffness: 150,
+    });
   }, [isNearEnd, buttonHeight]);
 
   // Handle scroll events

@@ -147,19 +147,6 @@ const WelcomeMinimalUI: React.FC = ({}) => {
           </TouchableOpacity>
 
           {/* Logout Button - Only show if user is logged in */}
-          {user && (
-            <TouchableOpacity
-              onPress={handleLogout}
-              className="bg-red-600 rounded-2xl py-3 px-6 mt-4"
-              activeOpacity={0.9}
-              accessibilityRole="button"
-              accessibilityLabel="تسجيل الخروج"
-            >
-              <Text className="font-ibm-plex-arabic-bold text-center w-full text-white text-base">
-                تسجيل الخروج
-              </Text>
-            </TouchableOpacity>
-          )}
 
           {/* Secondary link */}
           <TouchableOpacity

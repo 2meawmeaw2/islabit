@@ -41,55 +41,53 @@ const BundleFilter = memo(
       <Animated.View
         style={animatedStyle}
         entering={FadeIn.duration(300)}
-        className="mb-2 bg-fore"
+        className="my-2 bg-bg"
       >
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
-          className="flex-row-reverse"
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            width: "100%",
+          }}
         >
-          <Pressable
-            onPress={() => handleSelectBundle(null)}
-            className={`px-4 py-2 rounded-full mr-2 `}
-            style={[
-              selectedBundleId === null
-                ? { borderWidth: 1, borderColor: "#00AEEF" }
-                : {},
-              { borderWidth: 1, borderColor: "transparent" },
-            ]}
-          >
-            <Text
-              className={`font-ibm-plex-arabic-medium ${
-                selectedBundleId === null ? "text-white" : "text-text-disabled"
-              }`}
-            >
-              الكل
-            </Text>
-          </Pressable>
-
-          {bundles.map((bundle) => (
+          <View style={{ width: "100%" }} className="flex-row-reverse  ">
             <Pressable
-              key={bundle.id}
-              onPress={() => handleSelectBundle(bundle.id)}
-              className={`px-4 py-2 rounded-full mr-2 `}
-              style={
-                selectedBundleId === bundle.id
-                  ? { backgroundColor: bundle.color }
-                  : {}
-              }
+              onPress={() => handleSelectBundle(null)}
+              className="px-4 py-2 rounded-full mr-2"
+              style={{
+                backgroundColor:
+                  selectedBundleId === null ? "#00AEEF" : "#1A1E1F",
+              }}
             >
               <Text
                 className={`font-ibm-plex-arabic-medium ${
-                  selectedBundleId === bundle.id
+                  selectedBundleId === null
                     ? "text-white"
                     : "text-text-disabled"
                 }`}
               >
-                {bundle.title}
+                الكل
               </Text>
             </Pressable>
-          ))}
+
+            {bundles.map((bundle) => (
+              <Pressable
+                key={bundle.id}
+                onPress={() => handleSelectBundle(bundle.id)}
+                className="px-4 py-2 rounded-full mr-2"
+                style={{
+                  backgroundColor:
+                    selectedBundleId === bundle.id ? bundle.color : "#1A1E1F",
+                }}
+              >
+                <Text className="font-ibm-plex-arabic-medium text-text-primary">
+                  {bundle.title}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </ScrollView>
       </Animated.View>
     );
