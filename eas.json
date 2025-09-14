@@ -9,8 +9,7 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "resourceClass": "large"
+      "distribution": "internal"
     },
     "production": {
       "autoIncrement": true
