@@ -44,8 +44,7 @@
         {
           "locationAlwaysAndWhenInUsePermission": "يحتاج التطبيق الى التعرف على موقعك لتحديد أوقات الصلاة"
         }
-      ],
-      "expo-build-properties"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
