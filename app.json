@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "meaw",
-    "slug": "my-app",
+    "slug": "app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -14,13 +14,19 @@
       "bundleIdentifier": "com.anonymous.myapp"
     },
     "android": {
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.myapp"
+      "package": "com.anonymous.myapp",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -52,8 +58,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "8d5aae5c-a83c-4248-a950-6de32c92b5f4"
+        "projectId": "82f68fdb-bf6e-46d1-91ba-a5189dedc2ed"
       }
-    }
+    },
+    "owner": "sdadad"
   }
 }
