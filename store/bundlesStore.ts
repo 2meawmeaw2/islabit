@@ -1,30 +1,9 @@
-/**
- * Bundles Store - SQLite Implementation
- *
- * This store manages bundles using SQLite for better performance and data integrity.
- * Maintains all existing functionality while providing:
- * - Faster data access
- * - Better data consistency
- * - Islamic tracking principles preserved
- * - Bundle completion logic maintained
- */
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import type { CompletionRecord } from "../types/habit";
-import {
-  getAllBundles,
-  getBundleById,
-  createBundle,
-  updateBundleHabitCompletion,
-  markBundleDayCompleted,
-  removeBundleDayCompletion,
-  updateBundleCurrentDay,
-  updateBundleLastActivity,
-  deleteBundle,
-  isBundleDayCompleted,
-} from "../lib/database/bundles";
+import { useHabitsStore } from "./habitsStore";
 
-// Local shapes based on how bundles are saved
+// Local shapes based on how bundles are saved under the "bundles" key
 //
 // BUNDLE COMPLETION LOGIC:
 // A bundle day is considered "completed" when ALL habits in the bundle are completed
@@ -80,7 +59,6 @@ export interface BundleLocal {
 interface BundlesState {
   bundles: BundleLocal[];
   isHydrated: boolean;
-  isLoading: boolean;
   hydrate: () => Promise<void>;
   initialize: () => Promise<void>;
   setBundles: (items: BundleLocal[]) => Promise<void>;
@@ -103,124 +81,107 @@ interface BundlesState {
 export const useBundlesStore = create<BundlesState>((set, get) => ({
   bundles: [],
   isHydrated: false,
-  isLoading: false,
 
   hydrate: async () => {
     try {
-      set({ isLoading: true });
-      const bundles = await getAllBundles();
-      set({ bundles, isHydrated: true });
+      const raw = await AsyncStorage.getItem("bundles");
+      const parsed: BundleLocal[] = raw ? JSON.parse(raw) : [];
+      set({ bundles: parsed, isHydrated: true });
     } catch (error) {
       console.error("Error hydrating bundles:", error);
       set({ bundles: [], isHydrated: true });
-    } finally {
-      set({ isLoading: false });
     }
   },
 
   initialize: async () => {
     try {
-      set({ isLoading: true });
-      const bundles = await getAllBundles();
-      set({ bundles, isHydrated: true });
+      const raw = await AsyncStorage.getItem("bundles");
+      const parsed = raw ? JSON.parse(raw) : [];
+
+      const normalized: BundleLocal[] = Array.isArray(parsed)
+        ? parsed.map((b: any) => ({
+            id: b.id,
+            title: b.title,
+            subtitle: b.subtitle,
+            description: b.description,
+            category: b.category,
+            color: b.color,
+            image_url: b.image_url || "",
+            dates: b.dates,
+            habits: Array.isArray(b.habits)
+              ? b.habits.map((h: any) => ({
+                  id: h.id,
+                  title: h.title,
+                  quote: h.quote,
+                  description: h.description,
+                  relatedDays: Array.isArray(h.relatedDays)
+                    ? h.relatedDays
+                    : [0, 1, 2, 3, 4, 5, 6],
+                  relatedSalat: Array.isArray(h.relatedSalat)
+                    ? h.relatedSalat
+                    : ["fajr"],
+                  category: h.category || b.category,
+                  completed: Array.isArray(h.completed) ? h.completed : [],
+                  streak: typeof h.streak === "number" ? h.streak : 0,
+                  bestStreak:
+                    typeof h.bestStreak === "number" ? h.bestStreak : 0,
+                }))
+              : [],
+          }))
+        : [];
+
+      set({ bundles: normalized, isHydrated: true });
+
+      if (!raw) {
+        await AsyncStorage.setItem("bundles", JSON.stringify(normalized));
+      } else {
+        // Recalculate bundle completions to ensure they're up to date
+        await get().recalculateAllBundleCompletions();
+      }
     } catch (error) {
       console.error("Error initializing bundles:", error);
       set({ bundles: [], isHydrated: true });
-    } finally {
-      set({ isLoading: false });
     }
   },
 
   setBundles: async (items: BundleLocal[]) => {
     set({ bundles: items });
-    // Note: In SQLite implementation, we don't need to manually save
-    // as data is persisted automatically through database operations
+    try {
+      await AsyncStorage.setItem("bundles", JSON.stringify(items));
+    } catch (error) {
+      console.error("Error saving bundles:", error);
+    }
   },
 
   getBundleById: (id: string) => get().bundles.find((b) => b.id === id),
 
   addOrUpdateBundle: async (bundle: BundleLocal) => {
-    try {
-      set({ isLoading: true });
-
-      // Check if bundle exists
-      const existingBundle = await getBundleById(bundle.id);
-
-      if (existingBundle) {
-        // Update existing bundle
-        await createBundle(bundle); // This will replace the existing bundle
-      } else {
-        // Create new bundle
-        await createBundle(bundle);
-      }
-
-      // Update store
-      const existing = get().bundles;
-      const index = existing.findIndex((b) => b.id === bundle.id);
-      const next =
-        index >= 0
-          ? existing.map((b) => (b.id === bundle.id ? bundle : b))
-          : [...existing, bundle];
-
-      set({ bundles: next });
-    } catch (error) {
-      console.error("Error adding/updating bundle:", error);
-    } finally {
-      set({ isLoading: false });
-    }
+    const existing = get().bundles;
+    const index = existing.findIndex((b) => b.id === bundle.id);
+    const next =
+      index >= 0
+        ? existing.map((b) => (b.id === bundle.id ? bundle : b))
+        : [...existing, bundle];
+    await get().setBundles(next);
   },
 
-  updateBundle: async (
-    id: string,
-    updater: (b: BundleLocal) => BundleLocal
-  ) => {
-    try {
-      set({ isLoading: true });
-
-      const bundle = get().bundles.find((b) => b.id === id);
-      if (!bundle) return;
-
-      const updatedBundle = updater(bundle);
-      await createBundle(updatedBundle); // Replace in database
-
-      const next = get().bundles.map((b) => (b.id === id ? updatedBundle : b));
-      set({ bundles: next });
-    } catch (error) {
-      console.error("Error updating bundle:", error);
-    } finally {
-      set({ isLoading: false });
-    }
+  updateBundle: async (id, updater) => {
+    const next = get().bundles.map((b) => (b.id === id ? updater(b) : b));
+    await get().setBundles(next);
   },
 
   removeBundle: async (id: string) => {
-    try {
-      set({ isLoading: true });
-
-      await deleteBundle(id);
-      const next = get().bundles.filter((b) => b.id !== id);
-      set({ bundles: next });
-    } catch (error) {
-      console.error("Error removing bundle:", error);
-    } finally {
-      set({ isLoading: false });
-    }
+    const next = get().bundles.filter((b) => b.id !== id);
+    await get().setBundles(next);
   },
 
   clearBundles: async () => {
     try {
-      set({ isLoading: true });
-
-      // Clear all bundles from database
-      const bundles = get().bundles;
-      for (const bundle of bundles) {
-        await deleteBundle(bundle.id);
-      }
-
-      set({ bundles: [] });
+      await AsyncStorage.removeItem("bundles");
     } catch (error) {
       console.error("Error clearing bundles:", error);
     } finally {
-      set({ isLoading: false });
+      set({ bundles: [] });
     }
   },
 
@@ -229,97 +190,149 @@ export const useBundlesStore = create<BundlesState>((set, get) => ({
     date: string,
     prayer: string
   ) => {
-    try {
-      set({ isLoading: true });
+    console.log(
+      "🔄 Updating bundle completion for habit:",
+      habitId,
+      "date:",
+      date,
+      "prayer:",
+      prayer
+    );
 
-      // Find the bundle that contains this habit
-      const bundle = get().bundles.find((b) =>
-        b.habits.some((h) => h.id === habitId)
+    // Get the actual habit data from habits store
+    const habitsStore = useHabitsStore.getState();
+    const actualHabit = habitsStore.getHabitById(habitId);
+
+    if (!actualHabit) {
+      console.log("❌ Habit not found in habits store:", habitId);
+      return;
+    }
+
+    console.log(
+      "✅ Found habit in habits store:",
+      actualHabit.title,
+      "completed:",
+      actualHabit.completed
+    );
+
+    const bundles = get().bundles;
+    let hasUpdates = false;
+
+    const updatedBundles = bundles.map((bundle) => {
+      console.log(
+        "🔍 Checking bundle:",
+        bundle.title,
+        "habits:",
+        bundle.habits.map((h) => h.title)
       );
 
-      if (!bundle) return;
+      // Check if this bundle contains a habit that matches the completed habit
+      // We need to match by title and bundle context since IDs might be different
+      const habitInBundle = bundle.habits.find((habit) => {
+        // Try to match by original ID pattern or by title if it's a bundle habit
+        const matches =
+          habit.id === habitId ||
+          (habitId.startsWith("bundle_") &&
+            habit.title === actualHabit.title) ||
+          habit.title === actualHabit.title;
 
-      // Update the habit completion in database
-      await updateBundleHabitCompletion(habitId, date, prayer, true);
+        if (matches) {
+          console.log(
+            "🎯 Found matching habit in bundle:",
+            habit.title,
+            "bundle:",
+            bundle.title
+          );
+        }
 
-      // Check if bundle day is now completed
-      const isCompleted = await isBundleDayCompleted(bundle.id, date);
+        return matches;
+      });
 
-      if (isCompleted) {
-        await markBundleDayCompleted(bundle.id, date);
+      if (habitInBundle) {
+        console.log("📝 Updating bundle completion for:", bundle.title);
+        // Update the habit's completion in the bundle with the actual completion data
+        const updatedHabits = bundle.habits.map((habit) => {
+          if (habit.id === habitInBundle.id) {
+            // Use the actual completion data from the habits store
+            return {
+              ...habit,
+              completed: actualHabit.completed || [],
+              streak: actualHabit.streak || 0,
+              bestStreak: actualHabit.bestStreak || 0,
+            };
+          }
+          return habit;
+        });
 
-        // Update bundle in store
+        // Update the bundle with updated habits and recalculate completed days
         const updatedBundle = {
           ...bundle,
-          dates: {
-            ...bundle.dates,
-            completed_days: [...bundle.dates.completed_days, date],
-          },
+          habits: updatedHabits,
         };
 
-        set({
-          bundles: get().bundles.map((b) =>
-            b.id === bundle.id ? updatedBundle : b
-          ),
-        });
+        const bundleWithUpdatedCompletion =
+          updateBundleCompletedDays(updatedBundle);
+
+        console.log(
+          "📊 Bundle completion updated:",
+          bundleWithUpdatedCompletion.title,
+          "completed_days:",
+          bundleWithUpdatedCompletion.dates.completed_days
+        );
+
+        hasUpdates = true;
+        return bundleWithUpdatedCompletion;
       }
-    } catch (error) {
-      console.error("Error updating bundle completion:", error);
-    } finally {
-      set({ isLoading: false });
+
+      return bundle;
+    });
+
+    if (hasUpdates) {
+      await get().setBundles(updatedBundles);
     }
   },
 
   recalculateAllBundleCompletions: async () => {
-    try {
-      set({ isLoading: true });
+    // Get the actual habit data from habits store
+    const habitsStore = useHabitsStore.getState();
+    const allHabits = habitsStore.habits;
 
-      const bundles = get().bundles;
-
-      for (const bundle of bundles) {
-        // Get all dates from bundle habits
-        const allDates = new Set<string>();
-
-        for (const habit of bundle.habits) {
-          for (const completion of habit.completed) {
-            if (typeof completion === "string") {
-              allDates.add(completion);
-            } else {
-              allDates.add(completion.date);
-            }
-          }
-        }
-
-        // Check each date to see if bundle is completed
-        const completedDays: string[] = [];
-
-        for (const date of allDates) {
-          const isCompleted = await isBundleDayCompleted(bundle.id, date);
-          if (isCompleted) {
-            completedDays.push(date);
-          }
-        }
-
-        // Update bundle with recalculated completed days
-        const updatedBundle = {
-          ...bundle,
-          dates: {
-            ...bundle.dates,
-            completed_days: completedDays,
-          },
-        };
-
-        set({
-          bundles: get().bundles.map((b) =>
-            b.id === bundle.id ? updatedBundle : b
-          ),
+    const bundles = get().bundles;
+    const updatedBundles = bundles.map((bundle) => {
+      // Update each habit in the bundle with the latest data from habits store
+      const updatedHabits = bundle.habits.map((bundleHabit) => {
+        // Find the corresponding habit in the habits store
+        const actualHabit = allHabits.find((habit) => {
+          return (
+            habit.title === bundleHabit.title &&
+            habit.source === "bundle" &&
+            habit.bundleTitle === bundle.title
+          );
         });
-      }
-    } catch (error) {
-      console.error("Error recalculating bundle completions:", error);
-    } finally {
-      set({ isLoading: false });
-    }
+
+        if (actualHabit) {
+          // Use the actual completion data from the habits store
+          return {
+            ...bundleHabit,
+            completed: actualHabit.completed || [],
+            streak: actualHabit.streak || 0,
+            bestStreak: actualHabit.bestStreak || 0,
+          };
+        }
+
+        return bundleHabit;
+      });
+
+      // Update the bundle with updated habits and recalculate completed days
+      const updatedBundle = {
+        ...bundle,
+        habits: updatedHabits,
+      };
+
+      return updateBundleCompletedDays(updatedBundle);
+    });
+
+    await get().setBundles(updatedBundles);
   },
 }));
 
@@ -332,32 +345,35 @@ export function calculateBundleDayCompletion(
     return false;
   }
 
-  // For each habit in the bundle, check if it's completed for ALL its related salat on the target date
-  for (const habit of bundle.habits) {
-    // Get all related salat for this habit
-    const relatedSalat = habit.relatedSalat || [];
+  // Check if all habits are completed for all their related salats on the target date
+  return bundle.habits.every((habit) => {
+    // Get habit's related salats
+    const relatedSalats = habit.relatedSalat || [];
 
-    // For each related salat, check if there's a completion record
-    for (const prayer of relatedSalat) {
-      const isCompleted = habit.completed.some((completion) => {
-        if (typeof completion === "string") {
-          // Legacy format - treat as date only
-          return completion === targetDate;
-        } else {
-          // New format with prayer
-          return completion.date === targetDate && completion.prayer === prayer;
-        }
-      });
-
-      if (!isCompleted) {
-        // At least one prayer is missing for this habit
-        return false;
-      }
+    // If no related salats, consider it completed if there's any completion on that date
+    if (relatedSalats.length === 0) {
+      return (
+        habit.completed?.some((completion) => {
+          if (typeof completion === "string") {
+            return completion === targetDate;
+          }
+          return completion.date === targetDate;
+        }) || false
+      );
     }
-  }
 
-  // All habits completed for all their prayers
-  return true;
+    // Check if habit is completed for ALL its related salats on the target date
+    return relatedSalats.every((salat) => {
+      return (
+        habit.completed?.some((completion) => {
+          if (typeof completion === "string") {
+            return completion === targetDate;
+          }
+          return completion.date === targetDate && completion.prayer === salat;
+        }) || false
+      );
+    });
+  });
 }
 
 // Utility function to update bundle completed days
@@ -366,17 +382,18 @@ export function updateBundleCompletedDays(bundle: BundleLocal): BundleLocal {
   const endDate = new Date(bundle.dates.end_date);
   const completedDays: string[] = [];
 
-  // Check each day in the bundle duration
-  for (
-    let date = new Date(startDate);
-    date <= endDate;
-    date.setDate(date.getDate() + 1)
-  ) {
-    const dateStr = date.toISOString().split("T")[0];
+  // Iterate through each day from start to end
+  const currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    const dateStr = currentDate.toISOString().split("T")[0];
 
+    // Check if this day is completed
     if (calculateBundleDayCompletion(bundle, dateStr)) {
       completedDays.push(dateStr);
     }
+
+    // Move to next day
+    currentDate.setDate(currentDate.getDate() + 1);
   }
 
   return {
@@ -387,3 +404,6 @@ export function updateBundleCompletedDays(bundle: BundleLocal): BundleLocal {
     },
   };
 }
+
+export const selectBundles = (s: BundlesState) => s.bundles;
+export const selectIsBundlesHydrated = (s: BundlesState) => s.isHydrated;

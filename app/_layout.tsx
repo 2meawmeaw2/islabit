@@ -1,7 +1,6 @@
 import { AuthProvider } from "@/lib/auth";
 import { usePrayerInitialization } from "@/hooks/usePrayerInitialization";
 import { useHabitInitialization } from "@/lib/useHabitInitialization";
-import { useDatabaseInitialization } from "@/hooks/useDatabaseInitialization";
 import {
   // Thin (100)
   IBMPlexSansArabic_100Thin,
@@ -64,24 +63,18 @@ export default function RootLayout() {
 
   // Initialize our habit store from AsyncStorage
   const { isLoading: isHabitLoading, isHydrated } = useHabitInitialization();
-  // Initialize SQLite database
-  const {
-    isInitialized: isDatabaseInitialized,
-    isLoading: isDatabaseLoading,
-    error: databaseError,
-  } = useDatabaseInitialization();
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
 
   useEffect(() => {
-    if (loaded && isHydrated && isDatabaseInitialized) {
+    if (loaded && isHydrated) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, isHydrated, isDatabaseInitialized]);
+  }, [loaded, isHydrated]);
 
-  if (!loaded || !isHydrated || !isDatabaseInitialized) {
+  if (!loaded || !isHydrated) {
     return (
       <View
         style={{

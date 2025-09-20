@@ -1,27 +1,10 @@
-/**
- * Habits Store - SQLite Implementation
- *
- * This store manages habits using SQLite for better performance and data integrity.
- * Maintains all existing functionality while providing:
- * - Faster data access
- * - Better data consistency
- * - Islamic tracking principles preserved
- * - Smooth UX with optimized queries
- */
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { CompletionRecord, HabitProps } from "../types/habit";
-import {
-  getAllHabits,
-  getHabitById,
-  updateHabitCompletion,
-  updateHabitStreak,
-  createHabit,
-  updateHabit,
-  deleteHabit,
-} from "../lib/database/habits";
 
 // Helper function to calculate streaks properly
+
 function calculateStreaks(
   completed: CompletionRecord[],
   date: string,
@@ -136,244 +119,267 @@ interface HabitsState {
   habits: ExtendedHabitProps[];
   selectedHabitId: string | null;
   isHydrated: boolean;
-  isLoading: boolean;
   setHabits: (items: ExtendedHabitProps[]) => void;
   selectHabit: (habitId: string | null) => void;
-  updateHabit: (habit: ExtendedHabitProps) => Promise<void>;
+  updateHabit: (habit: ExtendedHabitProps) => void;
   completeHabit: (
     habitId: string,
     date: string,
     prayer: string,
     isCompleted: boolean
-  ) => Promise<void>;
+  ) => void;
   resetHabits: () => void;
   getHabitById: (habitId: string) => ExtendedHabitProps | undefined;
   loadAllHabits: () => Promise<void>;
   clearAllStorage: () => Promise<void>;
-  addHabit: (habit: Omit<HabitProps, "completed">) => Promise<void>;
-  removeHabit: (habitId: string) => Promise<void>;
+  saveHabitsToStorage: () => Promise<void>;
 }
 
-export const useHabitsStore = create<HabitsState>((set, get) => ({
-  habits: [],
-  selectedHabitId: null,
-  isHydrated: false,
-  isLoading: false,
+export const useHabitsStore = create<HabitsState>()(
+  persist(
+    (set, get) => ({
+      habits: [],
+      selectedHabitId: null,
+      isHydrated: false,
+      setHabits: (items: ExtendedHabitProps[]) => set({ habits: items }),
 
-  setHabits: (items: ExtendedHabitProps[]) => set({ habits: items }),
+      selectHabit: (habitId: string | null) =>
+        set({ selectedHabitId: habitId }),
 
-  selectHabit: (habitId: string | null) => set({ selectedHabitId: habitId }),
+      updateHabit: (habit: ExtendedHabitProps) =>
+        set({
+          habits: get().habits.map((h) => (h.id === habit.id ? habit : h)),
+        }),
 
-  updateHabit: async (habit: ExtendedHabitProps) => {
-    try {
-      set({ isLoading: true });
+      completeHabit: (
+        habitId: string,
+        date: string,
+        prayer: string,
+        isCompleted: boolean
+      ) => {
+        const habit = get().habits.find((h) => h.id === habitId);
 
-      // Update in database
-      await updateHabit(habit.id, {
-        title: habit.title,
-        quote: habit.quote,
-        description: habit.description,
-        color: habit.color,
-      });
+        if (!habit) return;
 
-      // Update in store
-      set({
-        habits: get().habits.map((h) => (h.id === habit.id ? habit : h)),
-      });
-    } catch (error) {
-      console.error("Error updating habit:", error);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+        // Clone the habit to avoid direct mutation
+        const updatedHabit: ExtendedHabitProps = { ...habit };
 
-  completeHabit: async (
-    habitId: string,
-    date: string,
-    prayer: string,
-    isCompleted: boolean
-  ) => {
-    try {
-      set({ isLoading: true });
+        // Initialize completed array if it doesn't exist
+        if (!updatedHabit.completed) {
+          updatedHabit.completed = [];
+        }
 
-      const habit = get().habits.find((h) => h.id === habitId);
-      if (!habit) return;
+        // Convert old format (string array) to new format (object array) if needed
+        if (
+          updatedHabit.completed.length > 0 &&
+          typeof updatedHabit.completed[0] === "string"
+        ) {
+          updatedHabit.completed = (updatedHabit.completed as string[]).map(
+            (dateStr: string) => ({
+              date: dateStr,
+              prayer: "unknown",
+            })
+          );
+        }
 
-      // Clone the habit to avoid direct mutation
-      const updatedHabit: ExtendedHabitProps = { ...habit };
+        const completedArray = updatedHabit.completed as CompletionRecord[];
+        let newCompleted: CompletionRecord[];
 
-      // Initialize completed array if it doesn't exist
-      if (!updatedHabit.completed) {
-        updatedHabit.completed = [];
-      }
+        if (isCompleted) {
+          // Check if we already have a record for this date and prayer
+          const existingRecordIndex = completedArray.findIndex(
+            (record: CompletionRecord) =>
+              record.date === date && record.prayer === prayer
+          );
 
-      // Convert old format (string array) to new format (object array) if needed
-      if (
-        updatedHabit.completed.length > 0 &&
-        typeof updatedHabit.completed[0] === "string"
-      ) {
-        updatedHabit.completed = (updatedHabit.completed as string[]).map(
-          (dateStr: string) => ({
-            date: dateStr,
-            prayer: "unknown",
-          })
-        );
-      }
-
-      const completedArray = updatedHabit.completed as CompletionRecord[];
-      let newCompleted: CompletionRecord[];
-
-      if (isCompleted) {
-        // Check if we already have a record for this date and prayer
-        const existingRecordIndex = completedArray.findIndex(
-          (record: CompletionRecord) =>
-            record.date === date && record.prayer === prayer
-        );
-
-        if (existingRecordIndex >= 0) {
-          // Already completed for this prayer, shouldn't happen normally
-          newCompleted = [...completedArray];
+          if (existingRecordIndex >= 0) {
+            // Already completed for this prayer, shouldn't happen normally
+            newCompleted = [...completedArray];
+          } else {
+            // Add a new completion record
+            newCompleted = [...completedArray, { date, prayer }];
+          }
         } else {
-          // Add a new completion record
-          newCompleted = [...completedArray, { date, prayer }];
+          // Remove the specific record for this date and prayer
+          newCompleted = completedArray.filter(
+            (record: CompletionRecord) =>
+              !(record.date === date && record.prayer === prayer)
+          );
         }
-      } else {
-        // Remove the specific record for this date and prayer
-        newCompleted = completedArray.filter(
-          (record: CompletionRecord) =>
-            !(record.date === date && record.prayer === prayer)
-        );
-      }
 
-      // Calculate proper streaks using our helper function
-      const { streak: calculatedStreak, bestStreak: calculatedBestStreak } =
-        calculateStreaks(
-          newCompleted,
-          date,
-          prayer,
-          isCompleted,
-          updatedHabit.relatedSalat || []
-        );
+        // Calculate proper streaks using our helper function
+        const { streak: calculatedStreak, bestStreak: calculatedBestStreak } =
+          calculateStreaks(
+            newCompleted,
+            date,
+            prayer,
+            isCompleted,
+            updatedHabit.relatedSalat || []
+          );
 
-      // Update completion in database
-      await updateHabitCompletion(habitId, date, prayer, isCompleted);
+        // Update the habit with calculated streaks
+        const finalUpdatedHabit: ExtendedHabitProps = {
+          ...updatedHabit,
+          completed: newCompleted,
+          streak: calculatedStreak,
+          bestStreak: calculatedBestStreak,
+          isCompletedForSelectedDay: isCompleted,
+        };
 
-      // Update streak in database
-      await updateHabitStreak(habitId, calculatedStreak, calculatedBestStreak);
+        // Update the habit in the store
+        set({
+          habits: get().habits.map((h) =>
+            h.id === habitId ? finalUpdatedHabit : h
+          ),
+        });
 
-      // Update the habit with calculated streaks
-      const finalUpdatedHabit: ExtendedHabitProps = {
-        ...updatedHabit,
-        completed: newCompleted,
-        streak: calculatedStreak,
-        bestStreak: calculatedBestStreak,
-        isCompletedForSelectedDay: isCompleted,
-      };
+        // Save to appropriate AsyncStorage location
+        get().saveHabitsToStorage();
+      },
 
-      // Update the habit in the store
-      set({
-        habits: get().habits.map((h) =>
-          h.id === habitId ? finalUpdatedHabit : h
-        ),
-      });
-    } catch (error) {
-      console.error("Error completing habit:", error);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+      resetHabits: () => set({ habits: [], selectedHabitId: null }),
 
-  resetHabits: () => set({ habits: [], selectedHabitId: null }),
+      getHabitById: (habitId: string) =>
+        get().habits.find((h) => h.id === habitId),
 
-  getHabitById: (habitId: string) => get().habits.find((h) => h.id === habitId),
+      loadAllHabits: async () => {
+        try {
+          // Load individual habits
+          const habitsData = await AsyncStorage.getItem("habits");
+          const individualHabits = habitsData ? JSON.parse(habitsData) : [];
 
-  loadAllHabits: async () => {
-    try {
-      set({ isLoading: true });
+          // Add source property to individual habits
+          const processedIndividualHabits = individualHabits.map(
+            (habit: any) => ({
+              ...habit,
+              bestStreak:
+                typeof habit.bestStreak === "number" ? habit.bestStreak : 0,
+              source: "individual" as const,
+            })
+          );
 
-      // Load habits from SQLite database
-      const habits = await getAllHabits();
+          // Load bundle habits
+          const bundlesData = await AsyncStorage.getItem("bundles");
+          const bundles = bundlesData ? JSON.parse(bundlesData) : [];
 
-      // Add source property to individual habits
-      const processedHabits = habits.map((habit) => ({
-        ...habit,
-        source: "individual" as const,
-      }));
+          // Extract habits from bundles with unique IDs
+          const bundleHabits = bundles.flatMap(
+            (bundle: any, bundleIndex: number) =>
+              (bundle.habits || []).map((habit: any, habitIndex: number) => ({
+                ...habit,
+                bestStreak:
+                  typeof habit.bestStreak === "number" ? habit.bestStreak : 0,
+                // Create unique ID by combining bundle ID and habit ID with index for extra uniqueness
+                id: `bundle_${bundle.id || bundle.title || bundleIndex}_${habit.id || habitIndex}`,
+                source: "bundle" as const,
+                bundleTitle: bundle.title,
+                bundleColor: bundle.color,
+              }))
+          );
 
-      set({ habits: processedHabits, isHydrated: true });
-    } catch (error) {
-      console.error("Error loading habits:", error);
-      set({ habits: [], isHydrated: true });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+          // Combine all habits and ensure unique IDs
+          const allHabits = [...processedIndividualHabits, ...bundleHabits];
 
-  addHabit: async (habit: Omit<HabitProps, "completed">) => {
-    try {
-      set({ isLoading: true });
+          // Ensure no duplicate IDs by adding index if needed
+          const uniqueHabits = allHabits.map((habit: any, index: number) => {
+            const existingHabits = allHabits.slice(0, index);
+            const hasDuplicate = existingHabits.some(
+              (h: any) => h.id === habit.id
+            );
+            return hasDuplicate
+              ? { ...habit, id: `${habit.id}_${index}` }
+              : habit;
+          });
 
-      // Create habit in database
-      await createHabit(habit);
-
-      // Add to store
-      const newHabit: ExtendedHabitProps = {
-        ...habit,
-        completed: [],
-        source: "individual",
-      };
-
-      set({
-        habits: [...get().habits, newHabit],
-      });
-    } catch (error) {
-      console.error("Error adding habit:", error);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  removeHabit: async (habitId: string) => {
-    try {
-      set({ isLoading: true });
-
-      // Remove from database
-      await deleteHabit(habitId);
-
-      // Remove from store
-      set({
-        habits: get().habits.filter((h) => h.id !== habitId),
-        selectedHabitId:
-          get().selectedHabitId === habitId ? null : get().selectedHabitId,
-      });
-    } catch (error) {
-      console.error("Error removing habit:", error);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  clearAllStorage: async () => {
-    try {
-      set({ isLoading: true });
-
-      // Clear all habits from database
-      const habits = get().habits;
-      for (const habit of habits) {
-        if (habit.source === "individual") {
-          await deleteHabit(habit.id);
+          set({ habits: uniqueHabits });
+        } catch (error) {
+          console.error("Error loading habits:", error);
+          set({ habits: [] });
         }
-      }
+      },
 
-      set({ habits: [], selectedHabitId: null });
-      console.log("All habits cleared from SQLite");
-    } catch (error) {
-      console.error("Error clearing storage:", error);
-    } finally {
-      set({ isLoading: false });
+      saveHabitsToStorage: async () => {
+        const { habits } = get();
+
+        // Separate individual habits from bundle habits
+        const individualHabitsToSave = habits.filter(
+          (h) => !h.source || h.source === "individual"
+        );
+        const bundleHabitsToSave = habits.filter((h) => h.source === "bundle");
+
+        // Save individual habits
+        await AsyncStorage.setItem(
+          "habits",
+          JSON.stringify(
+            individualHabitsToSave.map((h) => ({
+              ...h,
+              isCompletedForSelectedDay: undefined, // Don't store computed data
+            }))
+          )
+        );
+
+        // Update bundles with their updated habits
+        if (bundleHabitsToSave.length > 0) {
+          const bundlesData = await AsyncStorage.getItem("bundles");
+          const bundles = bundlesData ? JSON.parse(bundlesData) : [];
+
+          const updatedBundles = bundles.map((bundle: any) => {
+            const bundleHabits = bundleHabitsToSave.filter((h) =>
+              h.id.startsWith(`bundle_${bundle.id || bundle.title}_`)
+            );
+
+            if (bundleHabits.length > 0) {
+              // Update the habits in this bundle
+              const updatedBundleHabits = bundle.habits.map((habit: any) => {
+                const updatedHabit = bundleHabits.find(
+                  (h) =>
+                    h.id === `bundle_${bundle.id || bundle.title}_${habit.id}`
+                );
+                return updatedHabit
+                  ? {
+                      ...habit,
+                      completed: updatedHabit.completed,
+                      streak: updatedHabit.streak,
+                      bestStreak:
+                        typeof updatedHabit.bestStreak === "number"
+                          ? updatedHabit.bestStreak
+                          : 0,
+                    }
+                  : habit;
+              });
+
+              return {
+                ...bundle,
+                habits: updatedBundleHabits,
+              };
+            }
+            return bundle;
+          });
+
+          await AsyncStorage.setItem("bundles", JSON.stringify(updatedBundles));
+        }
+      },
+
+      clearAllStorage: async () => {
+        try {
+          await AsyncStorage.clear();
+          set({ habits: [], selectedHabitId: null });
+          console.log("habits cleared");
+          console.log("habits", get().habits);
+        } catch (error) {
+          console.error("Error clearing storage:", error);
+        }
+      },
+    }),
+    {
+      name: "habits-storage",
+      storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) state.isHydrated = true;
+      },
     }
-  },
-}));
+  )
+);
 
 export const selectSelectedHabit = (s: HabitsState) =>
   s.habits.find((h) => h.id === s.selectedHabitId) || null;
