@@ -45,9 +45,7 @@
       "expo-sqlite"
     ],
     "notification": {
-      "sounds": [
-        "./assets/sounds/sins.mp3"
-      ]
+      "sounds": ["./assets/sounds/sins.mp3"]
     },
     "experiments": {
       "typedRoutes": true
