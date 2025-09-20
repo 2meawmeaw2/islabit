@@ -1,78 +1,306 @@
-// lib/adhan/notifications.ts
-import * as Notifications from "expo-notifications";
-import { getPresentedNotificationsAsync } from "expo-notifications";
-import { Platform } from "react-native";
+import { PRAYERS } from "@/assets/constants/prayers";
+import S from "@/assets/styles/shared";
+import { FloatingActionMenu } from "@/components/FloatingActionMenu";
+import BundleFilter from "@/components/time/BundleFilter";
+import { SalatHabitsDisplay } from "@/components/time/SalatHabitsDisplay";
+import DisplayDays from "@/components/time/displayDays";
+import { useAuth } from "@/lib/auth";
+import { fmtArabicDateMonthAndNumber } from "@/lib/dates";
+import { loadUserById } from "@/lib/usersTable";
+import { useBundlesStore } from "@/store/bundlesStore";
+import { useHabitsStore } from "@/store/habitsStore";
+import { AntDesign } from "@expo/vector-icons";
+import { useRouter, router, Link } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { AddHabitScreen } from "@/components/time/addHabitScreen";
+const OrganizeModes: React.FC = () => {
+  // load user from user table in supabase
+  loadUserById(useAuth().user?.id ?? "");
 
-export interface PrayerSlot {
-  name: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha";
-  date: Date; // absolute Date for the prayer time
-}
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedBundleId, setSelectedBundleId] = useState<string | null>(null);
+  const router1 = useRouter();
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  // Use Zustand store instead of local state
+  const { habits, isHydrated, loadAllHabits, completeHabit, clearAllStorage } =
+    useHabitsStore();
 
-// Call this once early (app start) before scheduling
-export async function ensureNotificationSetup(): Promise<void> {
-  const settings = await Notifications.getPermissionsAsync();
-  if (!settings.granted) {
-    await Notifications.requestPermissionsAsync();
-  }
+  const { bundles } = useBundlesStore();
 
-  // Ensure a high-importance channel with custom sound
-  await Notifications.setNotificationChannelAsync("adhan", {
-    name: "الآذان",
-    importance: Notifications.AndroidImportance.MAX,
-    sound: "sins.mp3", // no extension; must match res/raw or bundled asset mapping
-    vibrationPattern: [0, 250, 250, 250],
-    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-    bypassDnd: false,
-    lightColor: "#000000",
-  });
+  // Pre-filter habits when bundle selection changes
+  const filteredHabits = useMemo(() => {
+    if (!selectedBundleId) return habits;
 
-  // Global handler (optional)
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-      sound: "sins.mp3",
-    }),
-  });
-}
+    const selectedBundle = bundles.find((b) => b.id === selectedBundleId);
+    if (!selectedBundle) return habits;
 
-export async function cancelAllPrayerNotifications(): Promise<void> {
-  await Notifications.cancelAllScheduledNotificationsAsync();
-}
+    return habits.filter(
+      (habit) =>
+        habit.source === "bundle" && habit.bundleTitle === selectedBundle.title
+    );
+  }, [habits, selectedBundleId, bundles]);
 
-export async function schedulePrayers(prayers: PrayerSlot[]): Promise<void> {
-  // Assumes setup done
+  // Function to get local date string in YYYY-MM-DD format (avoids UTC shift)
+  const getDateStr = useCallback((date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, []);
 
-  await cancelAllPrayerNotifications();
-  for (const p of prayers) {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: titleForPrayer(p.name),
-        body: ` ${p.date.toLocaleTimeString()}`,
-        sound: "sins.mp3",
-        priority: Notifications.AndroidNotificationPriority.MAX,
-      },
-      trigger: {
-        channelId: "adhan",
-        date: p.date, // exact calendar time trigger
-      } as any,
+  // Memoize the current date string to avoid recalculating on every render
+  const currentDateStr = useMemo(
+    () => getDateStr(selectedDate),
+    [selectedDate, getDateStr]
+  );
+
+  // Pre-compute habit completion status for the selected date to avoid repeated calculations
+  const habitsWithCompletionStatus = useMemo(() => {
+    return filteredHabits.map((habit) => {
+      // Convert completed to the expected format for SalatHabit
+      let completedArray: { date: string; prayer: string }[] = [];
+
+      if (habit.completed && Array.isArray(habit.completed)) {
+        if (typeof habit.completed[0] === "string") {
+          // Convert old string format to new object format
+          completedArray = (habit.completed as string[]).map(
+            (dateStr: string) => ({
+              date: dateStr,
+              prayer: "unknown",
+            })
+          );
+        } else {
+          // Already in the correct format
+          completedArray = habit.completed as {
+            date: string;
+            prayer: string;
+          }[];
+        }
+      }
+
+      return {
+        ...habit,
+        completed: completedArray,
+      };
     });
-  }
-}
+  }, [filteredHabits, currentDateStr]);
 
-function titleForPrayer(name: PrayerSlot["name"]): string {
-  switch (name) {
-    case "fajr":
-      return "الفجر";
-    case "dhuhr":
-      return "الظهر";
-    case "asr":
-      return "العصر";
-    case "maghrib":
-      return "المغرب";
-    case "isha":
-      return "العشاء";
+  useEffect(() => {
+    router.prefetch("/(tabs)/time/salatTime");
+  }, []);
+  // Load habits when component mounts
+  useEffect(() => {
+    if (isHydrated) {
+      loadAllHabits();
+      useBundlesStore.getState().initialize();
+      console.log(
+        "bundles from zustand store from index time",
+        useBundlesStore.getState().bundles
+      );
+    }
+  }, [isHydrated, loadAllHabits]);
+  const selectedDay = useMemo(() => selectedDate.getDay(), [selectedDate]);
+
+  // Optimized filtering function that uses pre-computed completion data
+  const getHabitsForPrayer = useCallback(
+    (prayerName: string) => {
+      return habitsWithCompletionStatus
+        .filter(
+          (habit: any) =>
+            habit.relatedSalat &&
+            habit.relatedSalat.includes(prayerName) &&
+            habit.relatedDays &&
+            habit.relatedDays.includes(selectedDay)
+        )
+        .map((habit) => {
+          // Check if habit is completed for this specific prayer on the selected date
+          const isCompletedForPrayer = habit.completed.some(
+            (record: { date: string; prayer: string }) =>
+              record.date === currentDateStr && record.prayer === prayerName
+          );
+
+          return {
+            ...habit,
+            isCompletedForSelectedDay: isCompletedForPrayer,
+          };
+        });
+    },
+    [habitsWithCompletionStatus, selectedDay, currentDateStr]
+  );
+
+  const handleToggleHabit = useCallback(
+    async (id: string, completed: boolean, prayerName?: string) => {
+      const currentPrayer = prayerName || "unknown";
+
+      // Use the store's completeHabit function with memoized date string
+      completeHabit(id, currentDateStr, currentPrayer, completed);
+
+      // Update bundle completion if this habit belongs to a bundle
+      const { updateBundleCompletion } = useBundlesStore.getState();
+      await updateBundleCompletion(id, currentDateStr, currentPrayer);
+    },
+    [currentDateStr, completeHabit]
+  );
+
+  const handleHabitPress = (habit: any) => {
+    router1.push({
+      pathname: "/(tabs)/time/habitDetails",
+      params: {
+        habit: JSON.stringify(habit),
+        habitId: habit.id,
+      },
+    });
+  };
+
+  const handleAddHabit = () => {
+    router1.push("/(tabs)/time/addNewHabit");
+  };
+
+  const handleGoToTracking = () => {
+    router1.navigate("/(tabs)/time/tracking");
+  };
+
+  const handleClearAllStorage = async () => {
+    try {
+      await clearAllStorage();
+      alert("Storage cleared successfully!");
+    } catch (error) {
+      console.error("Error clearing storage:", error);
+      alert("Failed to clear storage");
+    }
+  };
+
+  // Show loading while store is hydrating
+  if (!isHydrated) {
+    return (
+      <SafeAreaView className="h-full bg-bg justify-center items-center">
+        <ActivityIndicator size="large" color="#00AEEF" />
+        <Text className="text-text-disabled font-ibm-plex-arabic mt-4">
+          جاري تحميل العادات...
+        </Text>
+      </SafeAreaView>
+    );
   }
-}
+
+  return (
+    <>
+      <SafeAreaView className="h-full font-ibm-plex-arabic bg-bg">
+        <Modal
+          presentationStyle="overFullScreen"
+          visible={isModalVisible}
+          style={{ backgroundColor: "#00070A" }}
+          transparent={true}
+          animationType="slide"
+          statusBarTranslucent={true}
+          navigationBarTranslucent={true}
+          onRequestClose={() => setIsModalVisible(false)}
+        >
+          <TouchableOpacity
+            onPress={() => setIsModalVisible(false)}
+            activeOpacity={1}
+            className="flex-1 bg-black/50 absolute top-0 left-0 right-0 bottom-0"
+          />
+          <View className="flex-1  justify-end ">
+            <AddHabitScreen
+              onClose={() => {
+                (setIsModalVisible(false), console.log("closed"));
+              }}
+            />
+          </View>
+        </Modal>
+        <View className="w-full relative h-[60px] gap-1 bg-bg px-5 flex-row-reverse justify-between items-center">
+          <View>
+            <View style={S.rowBetween}>
+              <Text className="font-ibm-plex-arabic-bold text-text-brand text-2xl my-1">
+                اليوم
+              </Text>
+            </View>
+            <Link
+              href="/(tabs)/time/salatTime"
+              prefetch={true}
+              className="text-text-disabled text-right font-ibm-plex-arabic-extralight"
+            >
+              {fmtArabicDateMonthAndNumber(new Date())}
+            </Link>
+          </View>
+          <FloatingActionMenu
+            onNavigate={handleGoToTracking}
+            onClear={handleClearAllStorage}
+            onAddHabit={() => setIsModalVisible(true)}
+            onSalatTime={() => router1.navigate("/(tabs)/time/salatTime")}
+            position="top-left"
+          />
+        </View>
+        <ScrollView
+          className=" relative h-[100%] rounded-t-3xl bg-fore"
+          contentContainerStyle={{ paddingBottom: 140 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="mt-4">
+            <DisplayDays
+              selectedDate={selectedDate}
+              onChange={(date: Date) => setSelectedDate(date)}
+            />
+            <BundleFilter
+              selectedBundleId={selectedBundleId}
+              onSelectBundle={setSelectedBundleId}
+            />
+          </View>
+          <View>
+            {habits.length === 0 ? (
+              <View className="mx-4 mt-8 items-center">
+                <View className="bg-bg rounded-2xl p-8 items-center border border-text-brand">
+                  <AntDesign name="heart" size={48} color="#6C7684" />
+                  <Text className="text-text-primary font-ibm-plex-arabic-bold text-xl mt-4 text-center">
+                    ابدأ رحلتك
+                  </Text>
+                  <Text className="text-text-disabled font-ibm-plex-arabic text-base mt-2 text-center">
+                    أضف عاداتك اليومية لتتبع تقدمك
+                  </Text>
+                  <Pressable
+                    onPress={handleAddHabit}
+                    className="mt-6 bg-text-brand rounded-full px-6 py-3 flex-row-reverse items-center"
+                  >
+                    <AntDesign name="plus" size={20} color="white" />
+                    <Text className="text-white font-ibm-plex-arabic-medium mr-2">
+                      أضف عادة جديدة
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              PRAYERS.map((prayer, idx) => (
+                <SalatHabitsDisplay
+                  key={prayer.name}
+                  prayerKey={prayer.key}
+                  salatName={prayer.name}
+                  salatTime={prayer.time}
+                  habits={getHabitsForPrayer(prayer.key)}
+                  onToggleHabit={(id, completed) =>
+                    handleToggleHabit(id, completed, prayer.key)
+                  }
+                  onHabitPress={(habit) =>
+                    handleHabitPress({ ...habit, currentPrayer: prayer.key })
+                  }
+                  onAddHabit={handleAddHabit}
+                />
+              ))
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </>
+  );
+};
+
+export default OrganizeModes;

@@ -1,13 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { useAuth } from "@/lib/auth";
 import React, { useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ProfileCard from "../../../components/ProfileCard";
 import LanguagesScreen from "./languages";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function SettingsScreen() {
   // Simple settings data organized into two groups
+  const { signOut } = useAuth();
   const firstGroup = [
     {
       key: "notifications",
@@ -101,6 +103,25 @@ export default function SettingsScreen() {
               renderSettingItem(item, index === secondGroup.length - 1)
             )}
           </View>
+          <TouchableOpacity
+            style={{ width: "70%" }}
+            className="bg-feedback-error rounded-2xl py-3 px-6 mx-auto flex-row items-center justify-center gap-3"
+            activeOpacity={0.9}
+            accessibilityRole="button"
+            accessibilityLabel="تسجيل الخروج"
+            onPress={signOut}
+          >
+            <MaterialIcons
+              style={{ transform: [{ rotate: "180deg" }] }}
+              name="logout"
+              size={24}
+              color="white"
+            />
+
+            <Text className="text-white text-lg font-ibm-plex-arabic-semibold text-center">
+              تسجيل الخروج
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

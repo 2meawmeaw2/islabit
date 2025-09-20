@@ -527,10 +527,13 @@ const HabitItem: React.FC<{
             accessibilityRole="button"
             accessibilityLabel={`${habit.title} - ${isCompletedToday ? "مكتمل" : "غير مكتمل"}`}
           >
-            <View className="flex-row-reverse items-center mb-1 ">
-              <View className="flex-1">
+            <View
+              style={{ height: "100%" }}
+              className="flex-row-reverse items-center justify-end"
+            >
+              <View className="flex-1 justify-end ">
                 <Animated.Text
-                  className="font-ibm-plex-arabic-medium text-lg text-right py-1"
+                  className="font-ibm-plex-arabic-medium text-lg  text-right "
                   style={textAnimatedStyle}
                   numberOfLines={1}
                 >
@@ -540,7 +543,7 @@ const HabitItem: React.FC<{
                 {/* Habit Quote/Description */}
                 {habit.quote && (
                   <Animated.Text
-                    className="font-ibm-plex-arabic-light text-sm text-right text-text-disabled py-1"
+                    className="font-ibm-plex-arabic-light text-sm text-right text-text-disabled pb-1"
                     numberOfLines={2}
                   >
                     {habit.quote}

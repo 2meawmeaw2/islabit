@@ -78,7 +78,6 @@ export default function TabsLayout() {
           options={{
             title: "حسابي",
             tabBarAccessibilityLabel: "حسابي",
-            animation: "fade",
           }}
           listeners={{
             tabPress: (e) => {
@@ -91,7 +90,7 @@ export default function TabsLayout() {
           name="time"
           options={{
             title: "وقتي",
-            animation: "fade",
+
             tabBarAccessibilityLabel: "وقتي",
           }}
           listeners={{
@@ -105,7 +104,7 @@ export default function TabsLayout() {
           name="home"
           options={{
             title: "اكتشف",
-            animation: "fade",
+
             tabBarAccessibilityLabel: "اكتشف",
           }}
           listeners={{
@@ -131,7 +130,6 @@ function AnimatedTabBar({
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Slide up and fade in animation on mount
     Animated.parallel([
       Animated.spring(slideUpAnim, {
         toValue: 0,
@@ -162,7 +160,8 @@ function AnimatedTabBar({
           width: "100%",
           left: 0,
           bottom: 0,
-          paddingVertical: 2,
+          paddingTop: 2,
+          paddingBottom: insets.bottom / 1.5,
           backgroundColor: colors.SURFACE,
 
           borderTopWidth: 2,

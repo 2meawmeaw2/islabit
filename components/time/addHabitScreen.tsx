@@ -1,5 +1,5 @@
 import { WEEK_DAYS_AR } from "@/lib/dates";
-import { PRAYERS, COLORS as PRAYER_COLORS } from "@/lib/prayers";
+import { PRAYERS } from "@/assets/constants/prayers";
 import {
   HabitDay,
   HabitProps,
@@ -8,7 +8,7 @@ import {
 } from "@/types/habit";
 import { PrayerKey } from "@/types/salat";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// AsyncStorage removed in favor of Supabase + store update
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
@@ -21,9 +21,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { CategorySelector } from "../CategorySelector";
+import { createHabit, convertApiHabitToStore } from "@/lib/habits-api";
+import { useHabitsStore } from "@/store/habitsStore";
 
 const isBlank = (s?: string) => !s || !s.trim();
 
@@ -33,6 +36,7 @@ interface AddHabitScreenProps {
 
 export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
   const router = useRouter();
+  const { habits, setHabits, saveHabitsToStorage } = useHabitsStore();
   const [screenMode, setScreenMode] = useState<"selection" | "custom">(
     "selection"
   );
@@ -43,6 +47,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
   const [salat, setSalat] = useState<PrayerKey[]>(["fajr"]);
   // priority state removed - no longer needed
   const [category, setCategory] = useState<Category>(DEFAULT_CATEGORIES[0]); // Default to first category
+  const [isSaving, setIsSaving] = useState(false);
 
   // Live preview props (kept separate so we don't mutate the final object by mistake)
 
@@ -63,53 +68,46 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
       Alert.alert("العنوان مطلوب", "يرجى إدخال اسم العادة.");
       return;
     }
-
-    // Build a FINAL, strictly-typed habit object
-    const newHabit: HabitProps = {
-      id: String(Date.now()),
-      title: title.trim(),
-      quote: quote.trim() || undefined,
-      description: description.trim() || undefined,
-      streak: 0,
-      bestStreak: 0,
-      completed: [], // no days completed yet
-      relatedDays: [...selectedDays].sort((a, b) => a - b),
-      relatedSalat: [...salat],
-      // priority removed - no longer needed
-      category, // Add the selected category
-    };
-
+    setIsSaving(true);
     try {
-      const existingHabits = await AsyncStorage.getItem("habits");
-      const habits = existingHabits ? JSON.parse(existingHabits) : [];
-      habits.push(newHabit);
+      const apiHabit = await createHabit({
+        title: title.trim(),
+        quote: quote.trim() || undefined,
+        description: description.trim() || undefined,
+        related_days: [...selectedDays].sort((a, b) => a - b),
+        related_salat: [...salat],
+        category,
+        comments: [],
+        likes: [],
+        enrolled_users: [],
+      } as any);
 
-      await AsyncStorage.setItem("habits", JSON.stringify(habits));
-      console.log("Saved new habit:", newHabit);
-      console.log("Total habits now:", habits.length);
+      const storeHabit = convertApiHabitToStore(apiHabit);
+      const next = [...habits, storeHabit] as any;
+      setHabits(next);
+      await saveHabitsToStorage();
 
-      if (onClose) {
-        onClose();
-      } else {
-        router.navigate("/(tabs)/time");
-      }
+      if (onClose) onClose();
+      else router.navigate("/(tabs)/time");
     } catch (error) {
-      console.error("Error saving habit:", error);
+      console.error("Error creating habit:", error);
       Alert.alert("خطأ", "حدث خطأ أثناء حفظ العادة. يرجى المحاولة مرة أخرى.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Selection screen for choosing between custom habit and browsing habits
   const renderSelectionScreen = () => (
     <>
-      <View className="w-full my-8 ">
+      <View className="w-full mb-8 mt- ">
         <Text className="text-white font-ibm-plex-arabic-bold text-xl text-center mb-6">
           اختر طريقة إضافة العادة
         </Text>
 
         <View className="gap-5">
           <Pressable
-            onPress={() => setScreenMode("custom")}
+            onPress={() => router.navigate("/(tabs)/time/createCustomHabit")}
             accessibilityRole="button"
             accessibilityLabel="إنشاء عادة مخصصة"
             className="rounded-2xl px-4 py-5 bg-[#1E40AF] active:opacity-90 active:scale-95"
@@ -124,7 +122,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
           </Pressable>
 
           <Pressable
-            onPress={() => router.navigate("/(tabs)/home/(habit)")}
+            onPress={() => onClose?.()}
             accessibilityRole="button"
             accessibilityLabel="تصفح العادات المقترحة"
             className="rounded-2xl px-4 py-5 bg-[#164E63] active:opacity-90 active:scale-95"
@@ -145,9 +143,6 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
   // Custom habit creation form
   const renderCustomHabitForm = () => (
     <>
-      {/* Preview */}
-      <View style={styles.previewBlock}></View>
-
       {/* Title */}
       <View style={styles.section}>
         <Text className="text-text-primary font-ibm-plex-arabic text-right">
@@ -255,7 +250,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
           مرتبطة بصلاة
         </Text>
         <View style={styles.salatRow}>
-          {PRAYERS.map((p) => {
+          {PRAYERS.map((p: { key: PrayerKey; name: string; time: string }) => {
             const active = salat.includes(p.key);
             return (
               <Pressable
@@ -300,25 +295,19 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.content} className="flex-1">
+    <View style={styles.content}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable
+        <TouchableOpacity
           accessibilityRole="button"
+          activeOpacity={0.7}
           onPress={() =>
             onClose ? onClose() : router.navigate("/(tabs)/time")
           }
           style={styles.headerBtn}
-          hitSlop={8}
         >
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </Pressable>
-        <Text className="text-white font-ibm-plex-arabic-bold text-xl">
-          {screenMode === "selection"
-            ? "اختيار نوع العادة"
-            : "إنشاء عادة مخصصة"}
-        </Text>
-        <View style={styles.headerBtn} />
+          <Ionicons name="close" size={22} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       {/* Render content based on mode */}
@@ -327,7 +316,7 @@ export const AddHabitScreen: React.FC<AddHabitScreenProps> = ({ onClose }) => {
         : renderCustomHabitForm()}
 
       <View style={{ height: 24 }} />
-    </ScrollView>
+    </View>
   );
 };
 
@@ -336,17 +325,21 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: {
     padding: 12,
-    justifyContent: "center",
-    backgroundColor: "#000000",
+    backgroundColor: "#1A1E1F",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   header: {
-    height: 48,
     alignItems: "center",
-    justifyContent: "space-between",
-    flexDirection: "row-reverse",
-    marginBottom: 8,
+    flexDirection: "row",
   },
-  headerBtn: { width: 40, alignItems: "center", justifyContent: "center" },
+  headerBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#00070A",
+    borderRadius: "100%",
+    padding: 8,
+  },
   previewBlock: { marginTop: 6, marginBottom: 12 },
   section: { marginTop: 14 },
   daysRow: {

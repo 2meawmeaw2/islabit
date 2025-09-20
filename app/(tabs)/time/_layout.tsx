@@ -28,6 +28,16 @@ export default function TabsLayout() {
       />
 
       <Stack.Screen
+        name="createCustomHabit"
+        options={{
+          headerShown: false,
+          title: "إنشاء عادة مخصصة",
+          animation: "ios_from_left",
+          contentStyle: { backgroundColor: "#000000" },
+        }}
+      />
+
+      <Stack.Screen
         name="habitDetails"
         options={{
           headerShown: false,

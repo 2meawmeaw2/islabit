@@ -303,15 +303,16 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
-          data={trendingHabits}
-          keyExtractor={keyExtractor}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: 2, paddingBottom: 2 }}
-          renderItem={({ item, index }) => (
-            <HabitCard habit={item} index={index} onPress={onHabitPress} />
-          )}
-        />
+        <View style={{ paddingTop: 2, paddingBottom: 2 }}>
+          {trendingHabits.map((item, index) => (
+            <HabitCard
+              key={keyExtractor(item)}
+              habit={item}
+              index={index}
+              onPress={onHabitPress}
+            />
+          ))}
+        </View>
       )}
     </Animated.View>
   );

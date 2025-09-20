@@ -10,25 +10,36 @@ import { loadUserById } from "@/lib/usersTable";
 import { useBundlesStore } from "@/store/bundlesStore";
 import { useHabitsStore } from "@/store/habitsStore";
 import { AntDesign } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, router, Link } from "expo-router";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Modal,
   Pressable,
   ScrollView,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { AddHabitScreen } from "@/components/time/addHabitScreen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { CompletionRecord } from "@/types/habit";
 const OrganizeModes: React.FC = () => {
   // load user from user table in supabase
   loadUserById(useAuth().user?.id ?? "");
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedBundleId, setSelectedBundleId] = useState<string | null>(null);
-  const router = useRouter();
-
+  const router1 = useRouter();
+  const [isModalVisible, setIsModalVisible] = useState(false);
   // Use Zustand store instead of local state
   const { habits, isHydrated, loadAllHabits, completeHabit, clearAllStorage } =
     useHabitsStore();
@@ -56,88 +67,76 @@ const OrganizeModes: React.FC = () => {
     return `${year}-${month}-${day}`;
   }, []);
 
+  // Memoize the current date string to avoid recalculating on every render
+  const currentDateStr = useMemo(
+    () => getDateStr(selectedDate),
+    [selectedDate, getDateStr]
+  );
+
+  useEffect(() => {
+    router.prefetch("/(tabs)/time/salatTime");
+  }, []);
   // Load habits when component mounts
   useEffect(() => {
     if (isHydrated) {
       loadAllHabits();
       useBundlesStore.getState().initialize();
-      console.log(
-        "bundles from zustand store from index time",
-        useBundlesStore.getState().bundles
-      );
     }
   }, [isHydrated, loadAllHabits]);
   const selectedDay = useMemo(() => selectedDate.getDay(), [selectedDate]);
 
-  // Simplified filtering function that uses pre-filtered habits
-  const getHabitsForPrayer = useCallback(
-    (prayerName: string) => {
-      // Only filter by prayer and day - bundle filtering is already done
-      return filteredHabits
+  // Precompute per-prayer, per-day lists with completion flags and stable sorting
+  const prayerHabitLists = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    // Build once per date/day/filter change
+    PRAYERS.forEach((p) => {
+      const list = filteredHabits
         .filter(
           (habit: any) =>
-            habit.relatedSalat &&
-            habit.relatedSalat.includes(prayerName) &&
-            habit.relatedDays &&
+            habit.relatedSalat.includes(p.key) &&
             habit.relatedDays.includes(selectedDay)
         )
         .map((habit) => {
-          // Check if habit is completed for this specific prayer on the selected date
-          const currentDateStr = getDateStr(selectedDate);
-
-          // Convert completed to the expected format for SalatHabit
-          let completedArray: { date: string; prayer: string }[] = [];
-
-          if (habit.completed && Array.isArray(habit.completed)) {
-            if (typeof habit.completed[0] === "string") {
-              // Convert old string format to new object format
-              completedArray = (habit.completed as string[]).map(
-                (dateStr: string) => ({
-                  date: dateStr,
-                  prayer: "unknown",
-                })
-              );
-            } else {
-              // Already in the correct format
-              completedArray = habit.completed as {
-                date: string;
-                prayer: string;
-              }[];
-            }
-          }
-
+          const completedArray = (habit.completed ?? []) as CompletionRecord[];
           const isCompletedForPrayer = completedArray.some(
-            (record) =>
-              record.date === currentDateStr && record.prayer === prayerName
+            (record: CompletionRecord) =>
+              record.date === currentDateStr && record.prayer === p.key
           );
-
+          // Create a shallow copy only to attach the derived flag
           return {
             ...habit,
             completed: completedArray,
             isCompletedForSelectedDay: isCompletedForPrayer,
           };
+        })
+        .sort((a: any, b: any) => {
+          const aCompleted = a.isCompletedForSelectedDay;
+          const bCompleted = b.isCompletedForSelectedDay;
+          if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+          if (a.source !== b.source) return a.source === "bundle" ? -1 : 1;
+          return 0;
         });
-    },
-    [filteredHabits, selectedDay, getDateStr, selectedDate]
-  );
+      map[p.key] = list;
+    });
+    return map;
+  }, [filteredHabits, selectedDay, currentDateStr]);
 
   const handleToggleHabit = useCallback(
     async (id: string, completed: boolean, prayerName?: string) => {
-      const selectedDateStr = getDateStr(selectedDate);
       const currentPrayer = prayerName || "unknown";
 
-      // Use the store's completeHabit function
-      completeHabit(id, selectedDateStr, currentPrayer, completed);
+      // Use the store's completeHabit function with memoized date string
+      completeHabit(id, currentDateStr, currentPrayer, completed);
 
       // Update bundle completion if this habit belongs to a bundle
       const { updateBundleCompletion } = useBundlesStore.getState();
-      await updateBundleCompletion(id, selectedDateStr, currentPrayer);
+      await updateBundleCompletion(id, currentDateStr, currentPrayer);
     },
-    [selectedDate, getDateStr, completeHabit]
+    [currentDateStr, completeHabit]
   );
 
   const handleHabitPress = (habit: any) => {
-    router.push({
+    router1.push({
       pathname: "/(tabs)/time/habitDetails",
       params: {
         habit: JSON.stringify(habit),
@@ -147,11 +146,11 @@ const OrganizeModes: React.FC = () => {
   };
 
   const handleAddHabit = () => {
-    router.push("/(tabs)/time/addNewHabit");
+    router1.push("/(tabs)/time/addNewHabit");
   };
 
   const handleGoToTracking = () => {
-    router.navigate("/(tabs)/time/tracking");
+    router1.navigate("/(tabs)/time/tracking");
   };
 
   const handleClearAllStorage = async () => {
@@ -179,22 +178,53 @@ const OrganizeModes: React.FC = () => {
   return (
     <>
       <SafeAreaView className="h-full font-ibm-plex-arabic bg-bg">
+        <Modal
+          visible={isModalVisible}
+          style={{ backgroundColor: "#00070A" }}
+          transparent={true}
+          animationType="none" // Use none since we're handling it ourselves
+          statusBarTranslucent={true}
+          navigationBarTranslucent={true}
+          onRequestClose={() => setIsModalVisible(false)}
+        >
+          <TouchableOpacity
+            onPress={() => setIsModalVisible(false)}
+            activeOpacity={1}
+            className="flex-1 bg-black/50 absolute top-0 left-0 right-0 bottom-0"
+          />
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "flex-end",
+            }}
+          >
+            <AddHabitScreen
+              onClose={() => {
+                (setIsModalVisible(false), console.log("closed"));
+              }}
+            />
+          </View>
+        </Modal>
         <View className="w-full relative h-[60px] gap-1 bg-bg px-5 flex-row-reverse justify-between items-center">
           <View>
             <View style={S.rowBetween}>
               <Text className="font-ibm-plex-arabic-bold text-text-brand text-2xl my-1">
-                اليوم
+                اليومss
               </Text>
             </View>
-            <Text className="text-text-disabled text-right font-ibm-plex-arabic-extralight">
+            <Link
+              href="/(tabs)/time/salatTime"
+              prefetch={true}
+              className="text-text-disabled text-right font-ibm-plex-arabic-extralight"
+            >
               {fmtArabicDateMonthAndNumber(new Date())}
-            </Text>
+            </Link>
           </View>
           <FloatingActionMenu
             onNavigate={handleGoToTracking}
             onClear={handleClearAllStorage}
-            onAddHabit={handleAddHabit}
-            onSalatTime={() => router.navigate("/(tabs)/time/salatTime")}
+            onAddHabit={() => setIsModalVisible(true)}
+            onSalatTime={() => router1.navigate("/(tabs)/time/salatTime")}
             position="top-left"
           />
         </View>
@@ -203,7 +233,7 @@ const OrganizeModes: React.FC = () => {
           contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
         >
-          <View>
+          <View className="mt-4">
             <DisplayDays
               selectedDate={selectedDate}
               onChange={(date: Date) => setSelectedDate(date)}
@@ -242,7 +272,7 @@ const OrganizeModes: React.FC = () => {
                   prayerKey={prayer.key}
                   salatName={prayer.name}
                   salatTime={prayer.time}
-                  habits={getHabitsForPrayer(prayer.key)}
+                  habits={prayerHabitLists[prayer.key]}
                   onToggleHabit={(id, completed) =>
                     handleToggleHabit(id, completed, prayer.key)
                   }

@@ -139,9 +139,17 @@ export const createHabit = async (
       throw new Error("User not authenticated");
     }
 
+    // Insert only safe columns to avoid schema mismatches in environments
+    const insertData: any = {
+      title: habit.title,
+      quote: habit.quote ?? null,
+      description: habit.description ?? null,
+      user_id: user.id,
+    };
+
     const { data, error } = await supabase
       .from("habits")
-      .insert([{ ...habit, user_id: user.id }])
+      .insert([insertData])
       .select()
       .single();
 

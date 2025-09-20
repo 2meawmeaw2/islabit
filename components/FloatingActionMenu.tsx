@@ -286,7 +286,6 @@ export function FloatingActionMenu({
           onPress={toggleMenu}
         />
       </Animated.View>
-
       {/* Menu Container */}
       <View style={getPositionStyles()}>
         {/* Menu Items */}
@@ -377,11 +376,6 @@ export function FloatingActionMenu({
               borderRadius: 28,
               justifyContent: "center",
               alignItems: "center",
-              shadowColor: "#667eea",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 8,
             },
             mainButtonStyle,
           ]}

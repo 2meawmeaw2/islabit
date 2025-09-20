@@ -30,8 +30,13 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { loadUserById } from "@/lib/usersTable";
 import { supabase } from "@/utils/supabase";
 import { useUserStore } from "@/store/userStore";
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
 const HERO_HEIGHT = 220;
-const AuthScreen = () => {
+export default function AuthScreen() {
   const [mode, setMode] = useState<Mode>("signUp");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -631,7 +636,6 @@ const AuthScreen = () => {
                           resizeMode="contain"
                         />
                       </TouchableOpacity>
-
                       <View className="flex-row justify-center mb-3 my-2">
                         <TouchableOpacity
                           onPress={() =>
@@ -657,6 +661,4 @@ const AuthScreen = () => {
       </SafeAreaView>
     </AuthGuard>
   );
-};
-
-export default AuthScreen;
+}

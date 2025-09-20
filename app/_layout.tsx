@@ -29,10 +29,6 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import "./globals.css";
-import { useFocusEffect } from "@react-navigation/native";
-import * as NavigationBar from "expo-navigation-bar";
-import { useCallback } from "react";
-import { Platform } from "react-native";
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
@@ -65,16 +61,6 @@ export default function RootLayout() {
     IBMPlexSansArabic_700Bold,
   });
 
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS === "android") {
-        NavigationBar.setBackgroundColorAsync("#00070A");
-        NavigationBar.setButtonStyleAsync("light"); // "light" or "dark"
-        // Optional: draw behind for edge-to-edge looks
-        // await NavigationBar.setPositionAsync("absolute");
-      }
-    }, [])
-  );
   // Initialize our habit store from AsyncStorage
   const { isLoading: isHabitLoading, isHydrated } = useHabitInitialization();
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.

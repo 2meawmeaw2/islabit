@@ -9,7 +9,6 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children, requireAuth = true }: AuthGuardProps) {
   const { user, loading } = useAuth();
-
   useEffect(() => {
     if (!loading) {
       if (requireAuth && !user) {

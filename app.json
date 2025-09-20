@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "meaw",
-    "slug": "app",
+    "slug": "my-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -15,6 +15,7 @@
     },
     "android": {
       "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
@@ -22,11 +23,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.myapp",
-      "permissions": [
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
-      ]
+      "package": "com.anonymous.myapp"
     },
     "web": {
       "bundler": "metro",
@@ -44,23 +41,28 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-font",
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "يحتاج التطبيق الى التعرف على موقعك لتحديد أوقات الصلاة"
-        }
-      ]
+      "expo-font"
     ],
+    "notification": {
+      "sounds": [
+        "./assets/sounds/sins.mp3"
+      ]
+    },
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "82f68fdb-bf6e-46d1-91ba-a5189dedc2ed"
+        "projectId": "fc60fb44-d32e-4545-881d-f4adb2fb173d"
       }
     },
-    "owner": "sdadad"
+    "owner": "sdadad",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/fc60fb44-d32e-4545-881d-f4adb2fb173d"
+    }
   }
 }
