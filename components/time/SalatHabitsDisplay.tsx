@@ -25,7 +25,6 @@ import Animated, {
 import PercentageCircle from "../PercentageCircle";
 import { usePrayerTimesStore } from "@/store/prayerTimesStore";
 import { dayjs } from "@/lib/daysjs";
-import { MaterialIcons } from "@expo/vector-icons";
 type SalatHabit = {
   id: string;
   title: string;
@@ -510,7 +509,7 @@ const HabitItem: React.FC<{
               .duration(400)
               .easing(Easing.bezier(0.25, 0.46, 0.45, 0.94))}
           >
-            <MaterialIcons name="access-alarm" size={24} color="black" />
+            <Ionicons name="alarm-outline" size={24} color="black" />
           </Animated.View>
         </Pressable>
         {/* Clean Habit Content with smooth transitions */}
